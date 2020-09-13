@@ -1,6 +1,6 @@
 /* resched.c - resched, resched_cntl */
 
-#include <xinu.h>
+#include "../include/xinu.h" 
 
 struct	defer	Defer;
 

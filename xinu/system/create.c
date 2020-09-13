@@ -9,21 +9,21 @@ local	int newpid();
  *------------------------------------------------------------------------
  */
 pid32	create(
-	  void		*funcaddr,	/* Address of the function	*/
-	  uint32	ssize,		/* Stack size in bytes		*/
-	  pri16		priority,	/* Process priority > 0		*/
-	  char		*name,		/* Name (for debugging)		*/
-	  uint32	nargs,		/* Number of args that follow	*/
+	  void *funcaddr,	/* Address of the function	*/
+ 	  uint32 ssize,		/* Stack size in bytes		*/
+	  pri16 priority,	/* Process priority > 0		*/
+	  char *name,		/* Name (for debugging)		*/
+	  uint32 nargs,		/* Number of args that follow	*/
 	  ...
 	)
 {
-	uint32		savsp, *pushsp;
-	intmask 	mask;    	/* Interrupt mask		*/
-	pid32		pid;		/* Stores new process id	*/
+	uint32 savsp, *pushsp;
+	intmask mask;    	/* Interrupt mask		*/
+	pid32 pid;		/* Stores new process id	*/
 	struct	procent	*prptr;		/* Pointer to proc. table entry */
-	int32		i;
-	uint32		*a;		/* Points to list of args	*/
-	uint32		*saddr;		/* Stack address		*/
+	int32 i;
+	uint32 *a;		/* Points to list of args	*/
+	uint32 *saddr;		/* Stack address		*/
 	uint32 startTimeMS;
 
 	startTimeMS = clktime * 1000;
@@ -68,9 +68,12 @@ pid32	create(
 
 	/* Push arguments */
 	a = (uint32 *)(&nargs + 1);	/* Start of args		*/
+
 	a += nargs -1;			/* Last argument		*/
+
 	for ( ; nargs > 0 ; nargs--)	/* Machine dependent; copy args	*/
-		*--saddr = *a--;	/* onto created process's stack	*/
+		*--saddr = *a--;	 /* onto created process's stack	*/
+
 	*--saddr = (long)INITRET;	/* Push on return address	*/
 
 	/* The following entries on the stack must match what ctxsw	*/
@@ -89,15 +92,15 @@ pid32	create(
 
 	/* Basically, the following emulates an x86 "pushal" instruction*/
 
-	*--saddr = 0;			/* %eax */
-	*--saddr = 0;			/* %ecx */
-	*--saddr = 0;			/* %edx */
-	*--saddr = 0;			/* %ebx */
-	*--saddr = 0;			/* %esp; value filled in below	*/
-	pushsp = saddr;			/* Remember this location	*/
-	*--saddr = savsp;		/* %ebp (while finishing ctxsw)	*/
-	*--saddr = 0;			/* %esi */
-	*--saddr = 0;			/* %edi */
+	*--saddr = 0;			/* %eax accumulator*/
+	*--saddr = 0;			/* %ecx counter register*/
+	*--saddr = 0;			/* %edx  Data register*/
+	*--saddr = 0;			/* %ebx base register*/
+	*--saddr = 0;			/* %esp stack pointer; value filled in below	*/
+	pushsp = saddr;			/* Remember this location *save stack pointer*	*/
+	*--saddr = savsp;		/* %ebp (while finishing ctxsw) base pointer	*/
+	*--saddr = 0;			/* %esi source index*/
+	*--saddr = 0;			/* %edi destination index*/
 	*pushsp = (unsigned long) (prptr->prstkptr = (char *)saddr);
 	restore(mask);
 	return pid;
@@ -107,10 +110,10 @@ pid32	create(
  *  newpid  -  Obtain a new (free) process ID
  *------------------------------------------------------------------------
  */
-local	pid32	newpid(void)
+local pid32	newpid(void)
 {
-	uint32	i;			/* Iterate through all processes*/
-	static	pid32 nextpid = 1;	/* Position in table to try or	*/
+	uint32 i;			/* Iterate through all processes*/
+	static pid32 nextpid = 1;	/* Position in table to try or	*/
 					/*   one beyond end of table	*/
 
 	/* Check all NPROC slots */

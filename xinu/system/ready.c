@@ -1,6 +1,6 @@
 /* ready.c - ready */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 qid16	readylist;			/* Index of ready list		*/
 
