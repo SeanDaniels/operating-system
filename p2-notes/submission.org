@@ -1,0 +1,5 @@
+#+TITLE: Submission
+* What is the ready list? List all the system callsthat operateon it
+* What is thedefault process scheduling policy used in Xinu? Can this policy lead to process starvation? Explain your answer
+* When  a  context  switch  happens,how  does the resched function decide  if  the  currently  executing  process should be put back into the ready list?
+* Analyze Xinu code and list all circumstances thatcan trigger a scheduling event.

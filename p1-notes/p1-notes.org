@@ -1,0 +1,114 @@
+#+TITLE: P1 Notes
+* Process creation and stack handling Implement a fork system call similar to Unix’s fork.
+- The implementation should be in a separate fork.c file within the system folder.
+- The function declaration must be as follows: pid32 fork()
+- The fork primitive creates a new process (the child) by almost duplicating the parent process. Note that Xinu’s processes are essentially threads:
+- they share the memory address space but have private stacks
+- Initialization:
+  - The child process should be initialized to have the same name, priority and stack length as the parent process.
+  - The prsem, prhasmg and prdesc fields of its process control block (PCB) should be initialized as during standard process creation (to -1, FALSE and CONSOLE, respectively)
+  - The child process should be set in READY state (and inserted in the ready list) upon creation
+  - The ready list contains the processes that are eligible for execution. Have a look at ready.c (line 25) to see how to add a process to the ready list.
+  - Return value:
+    - On success, fork must return the PID of the child process to the parent
+    - value NPROC to the child (note: differently from Unix’s fork, the function you are coding does not return value 0 to the child because that’s a PID in use).
+    - On failure, fork returns SYSERR
+- Execution: After creation, the child process should resume execution starting from the first instruction following the fork system call
+- Testing: Test cases for the fork system call are provided in main.fork. To run these test cases, rename main.fork into main.c, and compile the code. Note that you can selectively disable the test cases by commenting out the respective “#define TESTCASEx” macro definition at the beginning of the file. The expected output is contained in the provided fork.output file. Hints: This problem requires a good understanding of the stack and its handling by Xinu.
+- You can find information on the x86 architecture and assembly in the Intel Architecture Software Developer’s Manual (available on the course website). In particular, refer to Volume 1, Chapters 4.1-4.3 for information on the handling of the stack. You can find also a brief introduction on the runtime stack in the Xinu’s book, Chapter 3.9.1.
+- Have a look at create.c and ctxsw.S to see how the stack is initialized and how it is handled upon context switch.
+- The stacktrace system call (in stacktrace.c) prints the stack backtrace for a given process, and can help you understand how to traverse the stack.
+- Have a look at the three test cases in main.fork and make sure that you fully understand their expected output (in fork.output).
+- If you want to the see assembly file corresponding to any Xinu file, you can proceed as follow.
+  - First, modify the Makefile (in the compile folder) and add “-S” to the CFLAGS compiler flag.
+  - Second, compile using “make clean; make;”
+  - After compilation, the .o files in the binaries subfolder will contain assembly (rather than object) code.
+* Tracking of system calls (only 592 students)
+- Consider the following system calls, which cause process state changes:
+  - create, kill, ready, sleepms, suspend, wait, wakeup, yield
+- In this coding problem, you need to implement a function that prints out a summary of all the invocations to these system calls occurred since the start of Xinu execution.
+- The function declaration must be as follows:
+  + void pr_status_syscall_summary())
+- Specifically, for each valid process and system call, pr_status_syscall_summary must print the following information:
+  - frequency (how many times each system call is invoked on that process)
+  - average execution time in clock cycles (i.e., how long it takes to execute each system call on average).
+- In order to do this, you will need to modify the implementation of these system calls to trace their invocations. Implement the pr_status_syscall_summary function as a separate file in the system folder. You can test this function by invoking it from the main.c, but the correctness of your implementation should be independent of the main.c. In other words, the results of pr_status_syscall_summary should be the same when it is called by any user function. See the project1_template.txt file for the format of the output of the pr_status_syscall_summary function. Important note: Unfortunately, you cannot rely on the interrupt-based timer of P2 to measure system calls, because interrupts get disabled inside most of the system calls you are attempting to measure. So, you need to use a hardware- based mechanism that does not rely on interrupts reaching the OS. The hardware timestamp counter in x86 6architecture provides this functionality. It measures the number of CPU clock cycles since the last reset of the CPU. You can implement a time measurement (in cycles) based on the values read from this counter. More details about this counter are in this whitepaper from file://localhost/Intel https/::www.intel.com:content:dam:www:public:us:en:documents:white-papers:ia-32-ia-64-benchmark-code-execution-paper.pdf
+* Important Values
+- Stack pointer
+  + ESP:
+    + stack pointer -> pointer to the last element inserted into the stack currently executing process
+  + prstkptr -> during a context switch, esp is saved to the pcb of the process that is switched out
+- EBP:
+  - Base pointer -> base of the last stack frame inserted into the stack
+* Process States
+create->PR_SUSPEND->resume->PR_READY (Now eligible for execution)->call to scheduler->PR_CURR
+* Ready List
+- Need function that moves process from
+* Resume Function
+- Disable interrupts at beginning
+- Enable interrupts at the end
+- Check if id is valid
+- If so, cally ready()
+* Stack
+- at creation:
+  | stackmagic                             |
+  | argn                                   |
+  | ..                                     |
+  | ..                                     |
+  | arg1                                   |
+  | initret                                |
+  | funcaddr                               |
+  | pointer to stackmagic                  |
+  | interrupts                             |
+  | EAX = 0                                |
+  | ECX = 0                                |
+  | EDX = 0                                |
+  | EBX = 0                                |
+  | ESP                                    |
+  | EBP (points to pointer to stack magic) |
+  | ESI = 0                                |
+  | EDI = 0                                |
+* Scheduler
+- Moves state from 'ready' to 'curr' (process is running)
+- Ready to switch transition is a *context switch*
+- Implemented in resched.c
+* Context Switch
+** High-level
+- Execution: Pold -> Pnew
+- Pold:
+  - State needs to be saved in:
+    - Stack
+    - Process Control Block
+- Pnew
+  + State needs to be retrieved from:
+    - Stack
+      + Value of all registers (EAX->ESI)
+    - Proccess Control Block
+** Stack Initialization
+- Upon process creation, process is 'suspended' state
+- Process is moved from suspended to ready
+- Stack is moved from ready to current
+  + This is accomplished by a context switch
+* currpid holds currently executing process' PID
+* Create Process
+- Find contiguous block, Save address
+  - saddr = starting address of contiguous block
+  | Addr | Content |
+  |      |         |
+- Process Table Entry
+  +
+    struct procent {		/* Entry in the process table		*/
+    prstate;
+    prprio;
+    prstkptr;
+    prstkbase;
+    prstklen;
+    prname[PMLEN];
+    prsem;
+    prparent;
+    prmsg;
+    prhasmsg;
+    prdesc[NDESC];
+    prStartTime;
+    };
+- Stack Frame
