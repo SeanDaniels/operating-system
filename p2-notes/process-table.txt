@@ -1,0 +1,57 @@
+Process Table with both user processes
+Pid Name             State Prio Ppid Stack Base Stack Ptr  Stack Size Thread Time(ms) Thread Runtime(ms)
+--- ---------------- ----- ---- ---- ---------- ---------- ---------- --------------- ---------------
+  0 prnull           ready    0    0 0x005FDFFC 0x00FFFF00   8192            1181            1005
+  1 rdsproc          susp   200    0 0x005FBFFC 0x005FBFC8  16384            1181               0
+  2 ipout            wait   500    0 0x005F7FFC 0x005F7F30   8192            1180               0
+  3 netin            wait   500    0 0x005F5FFC 0x005F5ED0   8192            1180               0
+  5 Main process     curr    20    4 0x005E3FFC 0x005E3F34  65536             174              11
+  6 timed_execution  ready   10    5 0x005D3FFC 0x005D3F00   1024             173             100
+  7 timed_execution  ready   10    5 0x005D3BFC 0x005D3B44   1024             173              70
+
+PID Switch
+--- ---------------- ----- ---- ---- ---------- ---------- ---------- --------------- ---------------
+  0     5
+  1     0
+  2     2
+  3     7
+  5     3
+  6     6
+  7     6
+
+
+Process table with one user process
+Pid Name             State Prio Ppid Stack Base Stack Ptr  Stack Size Thread Time(ms) Thread Runtime(ms)
+--- ---------------- ----- ---- ---- ---------- ---------- ---------- --------------- ---------------
+  0 prnull           ready    0    0 0x005FDFFC 0x00FFFF00   8192            1229            1005
+  1 rdsproc          susp   200    0 0x005FBFFC 0x005FBFC8  16384            1229               0
+  2 ipout            wait   500    0 0x005F7FFC 0x005F7F30   8192            1228               0
+  3 netin            wait   500    0 0x005F5FFC 0x005F5ED0   8192            1228               0
+  5 Main process     curr    20    4 0x005E3FFC 0x005E3F34  65536             222              21
+  7 timed_execution  ready   10    5 0x005D3BFC 0x005D3B00   1024             221             100
+
+PID Switch
+--- ---------------- ----- ---- ---- ---------- ---------- ---------- --------------- ---------------
+  0     5
+  1     0
+  2     2
+  3     7
+  5     4
+  7     7
+
+Process table with no user processes
+Pid Name             State Prio Ppid Stack Base Stack Ptr  Stack Size Thread Time(ms) Thread Runtime(ms)
+--- ---------------- ----- ---- ---- ---------- ---------- ---------- --------------- ---------------
+  0 prnull           ready    0    0 0x005FDFFC 0x00FFFF04   8192            1298            1055
+  1 rdsproc          susp   200    0 0x005FBFFC 0x005FBFC8  16384            1298               0
+  2 ipout            wait   500    0 0x005F7FFC 0x005F7F30   8192            1297               0
+  3 netin            wait   500    0 0x005F5FFC 0x005F5ED0   8192            1297               0
+  5 Main process     curr    20    4 0x005E3FFC 0x005E3F24  65536             291              31
+
+PID Switch
+--- ---------------- ----- ---- ---- ---------- ---------- ---------- --------------- ---------------
+  0     6
+  1     0
+  2     2
+  3     7
+  5     5

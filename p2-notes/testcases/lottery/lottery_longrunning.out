@@ -1,0 +1,14 @@
+=== TESTCASE 1::  CPU-intensive jobs =============================
+process 6:: runtime=10000, turnaround time=20000, ctx=521
+process 7:: runtime=10000, turnaround time=19650, ctx=520
+process 8:: runtime=0, turnaround time=0, ctx=0
+process 8:: runtime=10000, turnaround time=30055, ctx=2
+process 9:: runtime=10000, turnaround time=10000, ctx=2
+==================================================================
+
+=== TESTCASE 2::  interactive jobs ===============================
+process 10:: runtime=5000, turnaround time=11045, ctx=98
+process 11:: runtime=5000, turnaround time=18475, ctx=261
+process 12:: runtime=5000, turnaround time=18536, ctx=272
+==================================================================
+

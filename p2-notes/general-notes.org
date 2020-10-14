@@ -1,0 +1,26 @@
+#+TITLE: General Notes
+* Q insert
+** arguments
+- Takes arguments pid32 pid, qid16 q, int32 key
+- pid is the process id being inserted
+- q is the queue id of the queue being inserted into
+- key ?
+** Flow
+* Function newqueue()
+* Readylist Queue
+- firstid(q) returns the  id of the queue
+* Queue Table (queutab[])
+- global array of qentry structures
+- qentry stuctures contain an (int) qkey, (qid16) qnext, and (qid16) qprev
+* Lottery Scheduling
+- When a process is created -> add number of tickets to global ticket count
+- When a process is killed -> remove number of tickets from global ticket count
+- At scheduling time, iterate through processes in the ready list
+* User processes
+- compute()
+- burst_execution()
+- timed_execution()
+* MLFQ
+- When user process enters the system, add it to HPQ
+- If there are no processes in the ready list, check for entries in the HPQ
+  - are there ever not any entries in the ready list?
