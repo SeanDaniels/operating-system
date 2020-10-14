@@ -27,12 +27,13 @@
 #define	INITSTK		65536	/* Initial process stack size		*/
 #define	INITPRIO	20	/* Initial process priority		*/
 #define	INITRET		userret	/* Address to which process returns	*/
+#define USERPROCESSPRIO 10 /*  Priority assigned to user processes */
 
 /* Inline code to check process ID (assumes interrupts are disabled)	*/
 
-#define	isbadpid(x)	( ((pid32)(x) < 0) || \
-			  ((pid32)(x) >= NPROC) || \
-			  (proctab[(x)].prstate == PR_FREE))
+#define	isbadpid(x)	( ((pid32)(x) < 0) ||					\
+					  ((pid32)(x) >= NPROC) ||				\
+					  (proctab[(x)].prstate == PR_FREE))
 
 /* Number of device descriptors a process can have open */
 
@@ -53,6 +54,13 @@ struct procent {		/* Entry in the process table		*/
 	bool8	prhasmsg;	/* Nonzero iff msg is valid		*/
 	int16	prdesc[NDESC];	/* Device descriptors for process	*/
 	uint32 prStartTime; /*  Start time of process */
+/* Amount of time process has been in PR_CURR state */
+	uint32 runtimeStart;
+	uint32 runtimePause;
+	uint32 runtimeFinish;
+	uint32 runtime;
+	uint32 turnaroundtime;
+	uint32 num_ctxsw;
 };
 
 /* Marker for the top of a process stack (used to help detect overflow)	*/

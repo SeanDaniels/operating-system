@@ -22,4 +22,9 @@
 ** uint32 runtime – number of milliseconds the process has been running (i.e., in PR_CURR state).
 ** uint32 turnaroundtime – turnaround time in milliseconds.
 ** uint32 num_ctxsw – number of context switch operations *to* the process.
-* In this project, we will group processes in two categories: system processes and user processes. In particular, we will call “system processes” the processes spawned by default by Xinu (e.g., startup, main, etc.), and“user processes” the ones used to model user applications. This second category includes the processes spawned by the main function. User processes can, in turn, spawn other user processes. For this project, you can ignore the shell process (as it won’t be invoked in any of the test cases). Write a create_user_process function to explicitly spawn user processes (this function can invoke the standard create function internally). The create_user_process function should have the following interface (note: it must not include a priority parameter).
+* Description
+- In this project, we will group processes in two categories: system processes and user processes. In particular, we will call “system processes” the processes spawned by default by Xinu (e.g., startup, main, etc.), and“user processes” the ones used to model user applications. This second category includes the processes spawned by the main function. User processes can, in turn, spawn other user processes. For this project, you can ignore the shell process (as it won’t be invoked in any of the test cases).
+- Sytem Process = process spawned by default by xinu (eg, startup, main, etc)
+- User Process = process used to model user applications, processes spawned by main function
+- Write a create_user_process function to explicitly spawn user processes (this function can invoke the standard create function internally).
+- The create_user_process function should have the following interface (note: it must not include a priority parameter).

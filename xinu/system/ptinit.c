@@ -1,6 +1,6 @@
 /* ptinit.c - ptinit */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 struct	ptnode	*ptfree;		/* List of free message nodes	*/
 struct	ptentry	porttab[NPORTS];	/* Port table			*/

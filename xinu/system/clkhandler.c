@@ -1,5 +1,5 @@
 /* clkhandler.c - clkhandler */
-
+#define TIME_SLICE (QUANTUM)
 #include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
@@ -19,7 +19,6 @@ void	clkhandler()
 		clktime++;
 
 		/* Reset the local ms counter for the next second */
-
 		count1000 = 1000;
 		ctr1000 = 0;
 	}
@@ -42,5 +41,12 @@ void	clkhandler()
 	if((--preempt) <= 0) {
 		preempt = QUANTUM;
 		resched();
+	}
+	if((--med_preempt)<=0){
+		med_preempt = 2*QUANTUM;
+		med_resched();
+	}
+	if((--low_preempt)<=0){
+		low_preempt = 4*QUANTUM;
 	}
 }

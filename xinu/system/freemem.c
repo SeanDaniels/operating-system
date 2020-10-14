@@ -1,6 +1,6 @@
 /* freemem.c - freemem */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  freemem  -  Free a memory block, returning the block to the free list

@@ -1,8 +1,9 @@
 /* sleep.c - sleep sleepms */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 #define	MAXSECONDS	2147483		/* Max seconds per 32-bit msec	*/
+//#define DBG
 
 /*------------------------------------------------------------------------
  *  sleep  -  Delay the calling process n seconds
@@ -27,8 +28,8 @@ syscall	sleepms(
 	  int32	delay			/* Time to delay in msec.	*/
 	)
 {
+	uint32 localTickets;
 	intmask	mask;			/* Saved interrupt mask		*/
-
 	if (delay < 0) {
 		return SYSERR;
 	}

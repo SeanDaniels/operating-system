@@ -4,6 +4,7 @@
 
 #include "../include/xinu.h"
 #include <string.h>
+//#define DBG
 
 extern	void	start(void);	/* Start of Xinu code			*/
 extern	void	*_end;		/* End of Xinu code			*/
@@ -181,10 +182,14 @@ static	void	sysinit()
 		prptr->prstkbase = NULL;
 		prptr->prprio = 0;
 		prptr->prStartTime = 0;
+		prptr->runtimeStart = 0;
+		prptr->runtimePause = 0;
+		prptr->runtime = 0;
+		prptr->num_ctxsw = 0;
+		prptr->turnaroundtime = NULL;
 	}
 
 	/* Initialize the Null process entry */	
-
 	prptr = &proctab[NULLPROC];
 	prptr->prstate = PR_CURR;
 	prptr->prprio = 0;
@@ -193,10 +198,10 @@ static	void	sysinit()
 	prptr->prstklen = NULLSTK;
 	prptr->prstkptr = 0;
 	prptr->prStartTime = 0;
+	prptr->num_ctxsw = 0;
+	prptr->runtimeStart = (clktime*1000)+ctr1000;
 	currpid = NULLPROC;
-	
 	/* Initialize semaphores */
-
 	for (i = 0; i < NSEM; i++) {
 		semptr = &semtab[i];
 		semptr->sstate = S_FREE;
@@ -209,9 +214,11 @@ static	void	sysinit()
 	bufinit();
 
 	/* Create a ready list for processes */
-
 	readylist = newqueue();
-
+	/* Create  q's for MLFQ  */
+	q_high = newqueue();
+	q_med = newqueue();
+	q_low = newqueue();
 
 	/* initialize the PCI bus */
 
@@ -224,6 +231,9 @@ static	void	sysinit()
 	for (i = 0; i < NDEVS; i++) {
 		init(i);
 	}
+
+	listinit();
+
 	return;
 }
 

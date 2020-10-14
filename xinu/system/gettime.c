@@ -1,6 +1,6 @@
 /* gettime.c - gettime */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  gettime  -  Get xinu time in seconds past Jan 1, 1970

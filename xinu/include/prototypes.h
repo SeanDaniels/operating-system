@@ -43,6 +43,7 @@ extern	syscall	control(did32, int32, int32, int32);
 
 /* in file create.c */
 extern	pid32	create(void *, uint32, pri16, char *, uint32, ...);
+extern pid32 create_user_process(void *, uint32, char *, uint32, ...);
 
 /* in file ctxsw.S */
 extern	void	ctxsw(void *, void *);
@@ -368,6 +369,7 @@ extern	int32	quark_irq_routing(void);
 /* in file queue.c */
 extern	pid32	enqueue(pid32, qid16);
 extern	pid32	dequeue(qid16);
+extern void print_queue(qid16);
 
 /* in file ramclose.c */
 extern	devcall	ramclose(struct dentry *);
@@ -606,6 +608,39 @@ extern	void	xdone(void);
 
 /* in file yield.c */
 extern	syscall	yield(void);
+
+/* in file print_ready_list.c */
+extern syscall print_ready_list(void);
+
+/*in file burst_execute.c * */
+extern void burst_execution(uint32, uint32, uint32);
+
+/*in file list.c * */
+extern syscall test_list(void);
+
+extern syscall listinit(void);
+
+extern uint32 append_list_node(pid32);
+
+extern uint32 insert_list_node(pid32, uint32);
+
+extern struct node* find_pid_in_list(pid32);
+
+extern void print_list(void);
+
+extern void remove_from_list(pid32);
+
+/*in file lottery.c * */
+
+void add_process_to_lottery(pid32);
+
+void set_tickets(pid32, uint32);
+
+pid32 draw_lottery_tickets(pid32);
+
+/*in file printproc.c * */
+
+void print_proc(void);
 
 /* NETWORK BYTE ORDER CONVERSION NOT NEEDED ON A BIG-ENDIAN COMPUTER */
 #define	htons(x)  ((0xff & ((x)>>8)) | ((0xff & (x)) << 8))

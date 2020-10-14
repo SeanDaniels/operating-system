@@ -1,8 +1,0 @@
-system/resched.c:		if (ptold->prprio > firstkey(readylist)) {
-system/resched.c:		insert(currpid, readylist, ptold->prprio);
-system/resched.c:	currpid = dequeue(readylist);
-system/ready.c:qid16	readylist;			/* Index of ready list		*/
-system/ready.c:	insert(pid, readylist, prptr->prprio);
-system/initialize.c:	readylist = newqueue();
-system/fork.c:    insert(childProcessPID, readylist, childProcessPtr->prprio);
-tmp/fork.c:    insert(childProcessPID, readylist, childProcessPtr->prprio);

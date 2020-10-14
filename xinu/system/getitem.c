@@ -1,6 +1,6 @@
 /* getitem.c - getfirst, getlast, getitem */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  getfirst  -  Remove a process from the front of a queue
@@ -56,3 +56,4 @@ pid32	getitem(
 	queuetab[next].qprev = prev;
 	return pid;
 }
+

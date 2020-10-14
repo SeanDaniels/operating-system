@@ -4,13 +4,18 @@
 
 /* Default # of queue entries: 1 per process plus 2 for ready list plus	*/
 /*			2 for sleep list plus 2 per semaphore		*/
+/* adding 2 for hpc, 2 for mpc, 2 for lpc*/
+
+
 #ifndef NQENT
-#define NQENT	(NPROC + 4 + NSEM + NSEM)
+#define NQMLFQ 6
+#define NQENT	(NPROC + 4 + NSEM + NSEM + NQMLFQ)
 #endif
 
 #define	EMPTY	(-1)		/* Null value for qnext or qprev index	*/
 #define	MAXKEY	0x7FFFFFFF	/* Max key that can be stored in queue	*/
 #define	MINKEY	0x80000000	/* Min key that can be stored in queue	*/
+#define TIME_ALLOTMENT 20
 
 struct	qentry	{		/* One per process plus two per list	*/
 	int32	qkey;		/* Key on which the queue is ordered	*/
@@ -18,7 +23,13 @@ struct	qentry	{		/* One per process plus two per list	*/
 	qid16	qprev;		/* Index of previous process or head	*/
 };
 
+struct qEntryInfo{
+	int32 currentQ;
+	int32 runtime;
+	int32 allotment;
+};
 extern	struct qentry	queuetab[];
+extern struct qEntryInfo qInfo[];
 
 /* Inline queue manipulation functions */
 
