@@ -4,6 +4,6 @@
 tmp/
 
 
+binaries/
 **/.ccls-cache/**
 **/.ccls/**
-**/xinu/compile/binaries/*
