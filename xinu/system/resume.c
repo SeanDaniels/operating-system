@@ -1,7 +1,7 @@
 /* resume.c - resume */
 
-#include "../include/xinu.h"
-//#define DBG
+#include <xinu.h>
+
 /*------------------------------------------------------------------------
  *  resume  -  Unsuspend a process, making it ready
  *------------------------------------------------------------------------
@@ -16,9 +16,6 @@ pri16	resume(
 
 	mask = disable();
 	if (isbadpid(pid)) {
-		#ifdef DBG
-		kprintf("\nBAD PID ERROR\n");
-		#endif
 		restore(mask);
 		return (pri16)SYSERR;
 	}
@@ -29,12 +26,6 @@ pri16	resume(
 	}
 	prio = prptr->prprio;		/* Record priority to return	*/
 	ready(pid);
-	if(prio==USERPROCESSPRIO){
-		find_pid_in_list(pid)->elig=ELIGIBLE;
-	}
-#ifdef DBG
-		kprintf("\nResume success for PID %d\n", pid);
-#endif
 	restore(mask);
 	return prio;
 }

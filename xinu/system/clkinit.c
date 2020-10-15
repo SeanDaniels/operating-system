@@ -1,14 +1,11 @@
 /* clkinit.c - clkinit (x86) */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 uint32	clktime;		/* Seconds since boot			*/
 uint32	ctr1000 = 0;		/* Milliseconds since boot		*/
 qid16	sleepq;			/* Queue of sleeping processes		*/
 uint32	preempt;		/* Preemption counter			*/
-uint32	med_preempt;		/* Preemption counter			*/
-uint32	low_preempt;		/* Preemption counter			*/
-
 
 /*------------------------------------------------------------------------
  * clkinit  -  Initialize the clock and sleep queue at startup (x86)
@@ -25,12 +22,10 @@ void	clkinit(void)
 	/* Initialize the preemption count */
 
 	preempt = QUANTUM;
-	med_preempt = 2*QUANTUM;
-	low_preempt = 4*QUANTUM;
 
 	/* Initialize the time since boot to zero */
-	clktime = 0;
 
+	clktime = 0;
 
 	/* Set interrupt vector for the clock to invoke clkdisp */
 

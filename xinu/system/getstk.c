@@ -1,6 +1,6 @@
 /* getstk.c - getstk */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 /*------------------------------------------------------------------------
  *  getstk  -  Allocate stack memory, returning highest word address

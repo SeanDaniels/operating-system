@@ -41,5 +41,3 @@
 #include <multiboot.h>
 #include <stdio.h>
 #include <string.h>
-#include <lottery.h>
-#include <list.h>

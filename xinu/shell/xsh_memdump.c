@@ -1,6 +1,6 @@
 /* xsh_memdump.c - xsh_memdump */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 #include <string.h>
 #include <stdio.h>
 

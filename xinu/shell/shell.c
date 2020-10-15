@@ -1,6 +1,6 @@
 /* shell.c  -  shell */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 #include <stdio.h>
 #include "shprototypes.h"
 

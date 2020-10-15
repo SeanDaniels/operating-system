@@ -1,6 +1,6 @@
 /* mkbufpool.c - mkbufpool */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 /*------------------------------------------------------------------------
  *  mkbufpool  -  Allocate memory for a buffer pool and link the buffers

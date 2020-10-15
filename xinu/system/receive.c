@@ -1,6 +1,6 @@
 /* receive.c - receive */
 
-#include "../include/xinu.h" 
+#include <xinu.h>
 
 /*------------------------------------------------------------------------
  *  receive  -  Wait for a message and return the message to the caller

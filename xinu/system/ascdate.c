@@ -1,6 +1,6 @@
 /* ascdate.c - ascdate */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 #include <stdio.h>
 
 struct dateinfo Date = {0, FALSE, DATE_DST_AUTO,

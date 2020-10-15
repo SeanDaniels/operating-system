@@ -110,9 +110,9 @@ ECHO$(MACHINE) = echo; echo "On Vbox, the following command would be run:  "
 xinu:	Makefile rebuild $(BLDDIRS) $(DEFSFILE) $(DEPSFILE) $(CONFH) $(CONFC) $(LD_LIST)
 	@echo;echo 'Loading object files to produce GRUB bootable xinu'
 	@$(LD) $(LDFLAGS) $(LD_LIST) -o $(XINU)
+	@echo Copying xinu.elf to xinu.boot in the TFTP directory.
 	@$(ECHOxinu00) cp xinu.elf /srv/tftp/xinu.boot
-	@echo
-	
+
 
 $(BLDDIRS): 
 	@mkdir -p $(BLDDIRS)

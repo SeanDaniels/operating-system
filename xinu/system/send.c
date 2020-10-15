@@ -1,6 +1,6 @@
 /* send.c - send */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 /*------------------------------------------------------------------------
  *  send  -  Pass a message to a process and start recipient if waiting

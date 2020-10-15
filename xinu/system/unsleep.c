@@ -9,15 +9,15 @@
  *------------------------------------------------------------------------
  */
 status	unsleep(
-	pid32		pid		/* ID of process to remove	*/
-)
+	  pid32		pid		/* ID of process to remove	*/
+        )
 {
 	intmask	mask;			/* Saved interrupt mask		*/
-	struct	procent	*prptr;		/* Ptr to process's table entry	*/
+        struct	procent	*prptr;		/* Ptr to process's table entry	*/
 
-	pid32	pidnext;		/* ID of process on sleep queue	*/
-	/*   that follows the process	*/
-	/*   which is being removed	*/
+        pid32	pidnext;		/* ID of process on sleep queue	*/
+					/*   that follows the process	*/
+					/*   which is being removed	*/
 
 	mask = disable();
 

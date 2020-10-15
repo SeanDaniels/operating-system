@@ -1,6 +1,7 @@
 /* newqueue.c - newqueue */
 
-#include "../include/xinu.h" 
+#include <xinu.h>
+
 /*------------------------------------------------------------------------
  *  newqueue  -  Allocate and initialize a queue in the global queue table
  *------------------------------------------------------------------------
@@ -11,7 +12,6 @@ qid16	newqueue(void)
 	qid16		q;		/* ID of allocated queue 	*/
 
 	q = nextqid;
-
 	if (q >= NQENT) {		/* Check for table overflow	*/
 		return SYSERR;
 	}

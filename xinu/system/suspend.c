@@ -1,14 +1,14 @@
 /* suspend.c - suspend */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 /*------------------------------------------------------------------------
  *  suspend  -  Suspend a process, placing it in hibernation
  *------------------------------------------------------------------------
  */
 syscall	suspend(
-	pid32		pid		/* ID of process to suspend	*/
-)
+	  pid32		pid		/* ID of process to suspend	*/
+	)
 {
 	intmask	mask;			/* Saved interrupt mask		*/
 	struct	procent *prptr;		/* Ptr to process's table entry	*/
@@ -29,7 +29,7 @@ syscall	suspend(
 	}
 	if (prptr->prstate == PR_READY) {
 		getitem(pid);		    /* Remove a ready process	*/
-		/*   from the ready list	*/
+					    /*   from the ready list	*/
 		prptr->prstate = PR_SUSP;
 	} else {
 		prptr->prstate = PR_SUSP;   /* Mark the current process	*/
