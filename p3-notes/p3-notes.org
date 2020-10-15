@@ -24,6 +24,49 @@ void foo(void){
 | test_and_set(uint32 arg1, uint32 arg2) |                 |                                                   |
 * Note
   - Consider that, after ptr is read into EBX, EBX contains just a memory address. The xchg instruction needs to read the value at that memory location. So, you will need to use indirection to read and write memory: (EBX)
+  - () -> indirection: get value at memory location %x
+  - %ebp is a register, (%ebp) is the content of the register, x(%ebp) is an x offset from the content of the register
   - if your code uses EBX, you want to save the value of EBX on the stack after saving the value of EBP.
   - You don't need " movl 4(%ebp), %esp" at the end because the value of ESP is updated automatically.
   - At the end you need to pop EBX and EBP from the stack because you had pushed them on the stack at the beginning. But, you should not call popal, because it would pop all registers from the stack. But, you had not used pushal before, and so the content expected by popal is not on the stack.
+* Test and set
+#+BEGIN_SRC C
+uint32 test_and_set(uint32 *ptr, uint32 new_value) {
+    uint32 old_value = *ptr;
+    *ptr = new_value;
+    return old_value;
+}
+#+END_SRC
+#+BEGIN_SRC asm
+// working version, doesn't use xchg
+test_and_set:
+    pushl	%ebp
+    movl	%esp, %ebp
+    pushl %edx
+    movl	8(%ebp), %eax // ptr to old_value
+    movl	(%eax), %eax // return old_value, old_value = *ptr -> save content of old value to return register
+    movl	%eax, -4(%ebp) // write %eax to return register???
+    movl	8(%ebp), %eax // get ptr to old value again
+    movl	12(%ebp), %edx // get new value
+    movl	%edx, (%eax) // store new value at address indicated by old_value
+    movl	-4(%ebp), %eax // load old_value into return value
+    pop %edx
+    pop %ebp
+    ret
+#+END_SRC
+* Simple assembly addition function for reference
+#+BEGIN_SRC asm
+add_func:
+    // eax used as return register
+    pushl %ebp // store current ebp value onto stack
+    //() -> indirection: get value at memory location %x
+    movl %esp, %ebp // save current stack pointer into ebp register
+    //%ebp is a register, (%ebp) is the content of the register, x(%ebp) is an x offset from the content of the register
+    movl 8(%ebp), %edx // get arg 1 that was passed, store into ecx
+    movl (%edx), %edx
+    movl 12(%ebp), %eax // get arg 2 that was passed, store into eax
+
+    addl %edx, %eax // add contents of eax and ebx, store into ebx
+    popl %ebp
+    ret
+#+END_SRC

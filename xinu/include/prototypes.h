@@ -48,7 +48,7 @@ extern	pid32	create(void *, uint32, pri16, char *, uint32, ...);
 extern	void	ctxsw(void *, void *);
 
 /* in file ctxsw.S */
-extern	uint32 test_and_set(uint32, uint32);
+extern	uint32 test_and_set(uint32 *, uint32);
 
 /* in file dhcp.c */
 extern	uint32	getlocalip(void);

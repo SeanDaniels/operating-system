@@ -14,14 +14,15 @@ void sync_printf(char *fmt, ...)
 process	main(void)
 {
     uint32 old_val = 4;
+    uint32 *pointer_to_old_val = &old_val;
     uint32 new_val = 1;
     uint32 returnVal;
 
     sync_printf("\nMain Process Start\n");
 
-    returnVal = test_and_set(old_val, new_val);
+    returnVal = test_and_set(pointer_to_old_val, new_val);
 
-    sync_printf("Return value: %d\n", returnVal);
+    sync_printf("Return value: %x\n", returnVal);
     sync_printf("\nMain Process Done\n");
 
     return OK;
