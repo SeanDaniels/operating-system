@@ -13,19 +13,17 @@ void sync_printf(char *fmt, ...)
 
 process	main(void)
 {
-	/* Run the Xinu shell */
-	uint32 lockVal = 0;
-	uint32 *contentOfLockVal = &lockVal;
     uint32 old_val = 4;
-	uint32 new_val = 1;
-	uint32 returnVal;
+    uint32 new_val = 1;
+    uint32 returnVal;
 
-	kprintf("\nMain Process Start\n");
+    sync_printf("\nMain Process Start\n");
 
     returnVal = test_and_set(old_val, new_val);
 
-	kprintf("\nMain Process Done\n");
+    sync_printf("Return value: %d\n", returnVal);
+    sync_printf("\nMain Process Done\n");
 
-	return OK;
+    return OK;
     
 }

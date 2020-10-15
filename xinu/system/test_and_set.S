@@ -4,19 +4,21 @@
 
 /*------------------------------------------------------------------------
  * test and set -  
- *------------------------------------------------------------------------
- */
+ *------------------------------------------------------------------------*/
+
+
 test_and_set:
+    // eax used as return register
     pushl %ebp // store current ebp value onto stack
+    //() -> indirection: get value at memory location %x
     movl %esp, %ebp // save current stack pointer into ebp register
-    pushal
-    movl 8(%ebp), %eax // get arg 1 that was passed, store into eax
-    movl 12(%ebp), %ebx // get arg 2 that was passed, store into ebx
+    //%ebp is a register, (%ebp) is the content of the register, x(%ebp) is an x offset from the content of the register
+    movl 8(%ebp), %ebx // get arg 1 that was passed, store into ecx
+    movl 12(%ebp), %ecx // get arg 2 that was passed, store into eax
 
-    add %ebx, %eax // add contents of eax and ebx, store into ebx
-
-    movl (%eax), %esp
-
-    popal
-    movl 4(%esp), %ebp
+    addl %ebx, %ecx // add contents of eax and ebx, store into ebx
+    pushl %ecx
+    popl %ebx
+    movl %ebp, %esp
+    popl %ebp
     ret
