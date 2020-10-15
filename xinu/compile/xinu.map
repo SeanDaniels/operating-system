@@ -2061,38 +2061,37 @@ Linker script and memory map
                 0x0000000000118d55                _Xint45
                 0x0000000000118d63                _Xint46
                 0x0000000000118d71                defevec
- .text          0x0000000000118e31       0x10 binaries/test_and_set.o
+ .text          0x0000000000118e31        0xd binaries/test_and_set.o
                 0x0000000000118e31                test_and_set
- .text          0x0000000000118e41        0xf binaries/ttydispatch.o
-                0x0000000000118e41                ttydispatch
- .text          0x0000000000118e50       0x13 binaries/ethdispatch.o
-                0x0000000000118e50                ethdispatch
+ .text          0x0000000000118e3e        0xf binaries/ttydispatch.o
+                0x0000000000118e3e                ttydispatch
+ .text          0x0000000000118e4d       0x13 binaries/ethdispatch.o
+                0x0000000000118e4d                ethdispatch
  *(.rodata .rodata.*)
- *fill*         0x0000000000118e63        0x1 
- .rodata        0x0000000000118e64       0x8e binaries/ascdate.o
- .rodata        0x0000000000118ef2        0xa binaries/assembly_test.o
- .rodata        0x0000000000118efc       0xae binaries/conf.o
- *fill*         0x0000000000118faa        0x2 
- .rodata        0x0000000000118fac      0x22f binaries/evec.o
- *fill*         0x00000000001191db        0x1 
- .rodata        0x00000000001191dc       0x61 binaries/getutime.o
- *fill*         0x000000000011923d        0x3 
- .rodata        0x0000000000119240       0x90 binaries/i386.o
- .rodata        0x00000000001192d0      0x182 binaries/initialize.o
- *fill*         0x0000000000119452        0x2 
- .rodata        0x0000000000119454       0x20 binaries/kill.o
- .rodata        0x0000000000119474       0x3b binaries/main.o
- .rodata        0x00000000001194af        0xf binaries/panic.o
- *fill*         0x00000000001194be        0x2 
- .rodata        0x00000000001194c0      0x1ec binaries/pci.o
- .rodata        0x00000000001196ac       0x1d binaries/ptinit.o
- *fill*         0x00000000001196c9        0x3 
- .rodata        0x00000000001196cc       0x25 binaries/ptsend.o
- *fill*         0x00000000001196f1        0x3 
- .rodata        0x00000000001196f4       0xb7 binaries/stacktrace.o
- *fill*         0x00000000001197ab        0x1 
- .rodata        0x00000000001197ac       0x27 binaries/xdone.o
- *fill*         0x00000000001197d3        0xd 
+ .rodata        0x0000000000118e60       0x8e binaries/ascdate.o
+ .rodata        0x0000000000118eee        0xa binaries/assembly_test.o
+ .rodata        0x0000000000118ef8       0xae binaries/conf.o
+ *fill*         0x0000000000118fa6        0x2 
+ .rodata        0x0000000000118fa8      0x22f binaries/evec.o
+ *fill*         0x00000000001191d7        0x1 
+ .rodata        0x00000000001191d8       0x61 binaries/getutime.o
+ *fill*         0x0000000000119239        0x3 
+ .rodata        0x000000000011923c       0x90 binaries/i386.o
+ .rodata        0x00000000001192cc      0x182 binaries/initialize.o
+ *fill*         0x000000000011944e        0x2 
+ .rodata        0x0000000000119450       0x20 binaries/kill.o
+ .rodata        0x0000000000119470       0x3b binaries/main.o
+ .rodata        0x00000000001194ab        0xf binaries/panic.o
+ *fill*         0x00000000001194ba        0x2 
+ .rodata        0x00000000001194bc      0x1ec binaries/pci.o
+ .rodata        0x00000000001196a8       0x1d binaries/ptinit.o
+ *fill*         0x00000000001196c5        0x3 
+ .rodata        0x00000000001196c8       0x25 binaries/ptsend.o
+ *fill*         0x00000000001196ed        0x3 
+ .rodata        0x00000000001196f0       0xb7 binaries/stacktrace.o
+ *fill*         0x00000000001197a7        0x1 
+ .rodata        0x00000000001197a8       0x27 binaries/xdone.o
+ *fill*         0x00000000001197cf       0x11 
  .rodata        0x00000000001197e0       0x81 binaries/ctype_.o
                 0x00000000001197e0                _ctype_
  *fill*         0x0000000000119861        0x3 
