@@ -47,8 +47,6 @@ extern	pid32	create(void *, uint32, pri16, char *, uint32, ...);
 /* in file ctxsw.S */
 extern	void	ctxsw(void *, void *);
 
-/* in file ctxsw.S */
-extern	uint32 test_and_set(uint32 *, uint32);
 
 /* in file dhcp.c */
 extern	uint32	getlocalip(void);
@@ -609,6 +607,18 @@ extern	void	xdone(void);
 
 /* in file yield.c */
 extern	syscall	yield(void);
+
+/* in file testandset.S */
+extern	uint32 test_and_set(uint32 *, uint32);
+
+/* /\* in file spinlock.c *\/ */
+/* extern	syscall	sl_initlock(sl_lock_t *); */
+
+/* /\* in file spinlock.c *\/ */
+/* extern	syscall	sl_lock(sl_lock_t *); */
+
+/* /\* in file spinlock.c *\/ */
+/* extern	syscall	sl_unlock(sl_lock_t *); */
 
 /* NETWORK BYTE ORDER CONVERSION NOT NEEDED ON A BIG-ENDIAN COMPUTER */
 #define	htons(x)  ((0xff & ((x)>>8)) | ((0xff & (x)) << 8))

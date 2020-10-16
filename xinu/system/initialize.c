@@ -2,7 +2,7 @@
 
 /* Handle system initialization and become the null process */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 #include <string.h>
 
 extern	void	start(void);	/* Start of Xinu code			*/

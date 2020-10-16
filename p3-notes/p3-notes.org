@@ -1,4 +1,26 @@
 #+TITLE: P3 Notes
+* Requirements
+- include/lock.h contains all lock variants
+- each lock variant has seperate .c file
+- no reliance on semaphores or interrupts
+- assume a fixed number of locks
+- no need to implement lock delete function
+- return syserr if max number of locks of a particular type is reached
+- unlock system calls return syserr if process tries to release a lock that it doesnt own
+* Tasks
+- Provide assembly implementation of atomic test_and_set function
+- Implement spinlock based on test_and_set
+* Spinlock
+- needs initialization
+- needs lock function
+- needs unlock function
+- sl_lock_t can be defined how I wish
+- spinlock implementation should be in system/spinlock.c
+- include in lock.h constant NSPINLOCKS definingh the max number of spinlocks that can be used, set NSPINLOCKS = 20
+** syscalls
+- syscall sl_initlock(sl_lock_t *lock)
+- syscall sl_lock(sl_lock_t *lock)
+- syscall sl_unlock(sl_lock_t *lock)
 * Stack Information
 #+BEGIN_SRC C
 int bar(int a, int b){
@@ -22,7 +44,7 @@ void foo(void){
 | x                                      |                 |                                                   |
 | y                                      |                 |                                                   |
 | test_and_set(uint32 arg1, uint32 arg2) |                 |                                                   |
-* Note
+* Note on assembly function
   - Consider that, after ptr is read into EBX, EBX contains just a memory address. The xchg instruction needs to read the value at that memory location. So, you will need to use indirection to read and write memory: (EBX)
   - () -> indirection: get value at memory location %x
   - %ebp is a register, (%ebp) is the content of the register, x(%ebp) is an x offset from the content of the register
