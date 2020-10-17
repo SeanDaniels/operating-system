@@ -19,24 +19,20 @@
     ;; movl 12(%ebp), %edx // new_value -> get arg 2 (new_val) that was passed, store into eax
     ;; movl %edx, (%eax)
     ;; ;; xchg 8(%ebp), %eax  //put new_value into old value
-
-
     ;; popl %edx
     ;; popl %ebp
     ;; ret
     ;;
 test_and_set:
-    pushl	%ebp
-    movl	%esp, %ebp
+    pushl %ebp
+    movl %esp, %ebp
     pushl %edx
-    // i want *ptr to equal new value
-    movl	8(%ebp), %eax // ptr to old_value
-    movl	(%eax), %eax // return old_value, old_value = *ptr -> save content of old value to return register
-    movl	%eax, -4(%ebp) // store value of *ptr in this functions frame
-    movl	8(%ebp), %eax // get ptr to old value again
-    movl	12(%ebp), %edx // get new value
-    xchg    %edx, (%eax) // store new value at address indicated by old_value
-    movl	-4(%ebp), %eax // load old_value (in this functions frame) into return register
+
+    movl 12(%ebp),%eax      /* eax = new_value                              */
+
+    movl 8(%ebp), %edx      /* ecx = ptr  - THIS WAY, THE OLD VALUE POINTED by ptr is read into EAX during the exchange without any additional MOVL instruction needed */
+
+    xchg (%edx),%eax        /* exchange eax with value at address ptr - THIS IS THE ATOMIC SWAP OPERATION       */
 
     pop %edx
     pop %ebp
