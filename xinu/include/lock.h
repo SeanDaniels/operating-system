@@ -2,7 +2,7 @@
 #define NPSINLOCKS 20
 #define LOCKED 1 
 #define UNLOCKED 0
-#define NOOWNER 0xFFFFFFFF
+#define NOOWNER 0
 
 typedef struct{
     uint32 lock_value;

@@ -611,6 +611,8 @@ extern	syscall	yield(void);
 /* in file testandset.S */
 extern	uint32 test_and_set(uint32 *, uint32);
 
+/*  in file main.c *  */
+extern void sync_printf(char* fmt, ...);
 /* /\* in file spinlock.c *\/ */
 /* extern	syscall	sl_initlock(sl_lock_t *); */
 
