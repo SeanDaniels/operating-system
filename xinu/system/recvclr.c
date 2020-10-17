@@ -1,6 +1,6 @@
 /* recvclr.c - recvclr */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  recvclr  -  Clear incoming message, and return message if one waiting
