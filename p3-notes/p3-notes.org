@@ -21,6 +21,30 @@
 - syscall sl_initlock(sl_lock_t *lock)
 - syscall sl_lock(sl_lock_t *lock)
 - syscall sl_unlock(sl_lock_t *lock)
+** test case
+- creates a process called nthreads, nthreads creates nthreads number of processes called increment
+- create nthreads
+  #+BEGIN_SRC c
+create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex)
+  #+END_SRC
+  + args
+    - funcaddr -> nthreads
+    - INITSTK -> stack size
+    - priority -> 1
+    - name -> "nthreads"
+    - nargs -> 4
+      + nt -> number of threads
+      + n -> value/nt
+      + &x -> address of shared variable being incremented
+- create increment
+  #+BEGIN_SRC c
+create((void *)increment, INITSTK, 1,"p", 3, x, n, mutex)
+  #+END_SRC
+  - args
+    - x -> shared variable
+    - n -> value/nt
+    - mutex -> lock
+
 * Stack Information
 #+BEGIN_SRC C
 int bar(int a, int b){
@@ -75,6 +99,25 @@ test_and_set:
     pop %edx
     pop %ebp
     ret
+
+// working version, uses xchg, not atomic enough
+test_and_set:
+    pushl	%ebp
+    movl	%esp, %ebp
+    pushl %edx
+
+    movl	8(%ebp), %eax // ptr to old_value
+    movl	(%eax), %eax // return old_value, old_value = *ptr -> save content of old value to return register
+    movl	%eax, -4(%ebp) // store value of *ptr in this functions frame
+    movl	8(%ebp), %eax // get ptr to old value again
+    movl	12(%ebp), %edx // get new value
+    xchg    %edx, (%eax) // store new value at address indicated by old_value
+    movl	-4(%ebp), %eax // load old_value (in this functions frame) into return register
+
+    pop %edx
+    pop %ebp
+    ret
+
 #+END_SRC
 * Simple assembly addition function for reference
 #+BEGIN_SRC asm
