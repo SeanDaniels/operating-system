@@ -24,7 +24,7 @@ process increment(uint32 *x, uint32 n, sl_lock_t *mutex){
 		sl_unlock(mutex);
         kprintf("Thread %d has unlocked\n", currpid);
 	}
-	return OK;
+    return OK;
 }
 
 
@@ -44,7 +44,10 @@ process nthreads(uint32 nt, uint32 *x, uint32 n, sl_lock_t *mutex){
 			return SYSERR;
 		}
 	}
-	for (i=0; i < nt; i++) receive();
+    for (i=0; i < nt; i++){
+        kprintf("Receiving %d\n", i);
+        receive();
+    }
 	return OK;
 }
 

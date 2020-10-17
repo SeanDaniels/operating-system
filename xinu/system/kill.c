@@ -1,6 +1,6 @@
 /* kill.c - kill */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  kill  -  Kill a process and remove it from the system
@@ -25,7 +25,9 @@ syscall	kill(
 		xdone();
 	}
 
+	/*  let parent process know that child process has finished */
 	send(prptr->prparent, pid);
+
 	for (i=0; i<3; i++) {
 		close(prptr->prdesc[i]);
 	}

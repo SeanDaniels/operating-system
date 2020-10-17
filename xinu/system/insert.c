@@ -1,6 +1,6 @@
 /* insert.c - insert */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  insert  -  Insert a process into a queue in descending key order

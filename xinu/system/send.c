@@ -23,12 +23,12 @@ syscall	send(
 
 	prptr = &proctab[pid];
 	if (prptr->prhasmsg) {
-		#ifdef DBG
+#ifdef DBG
 		kprintf("Process %d already has message\n", pid);
 		resched();
 		restore(mask);
 		return OK;
-		#endif
+#endif
 	}
 	prptr->prmsg = msg;		/* Deliver message		*/
 	prptr->prhasmsg = TRUE;		/* Indicate message is waiting	*/
