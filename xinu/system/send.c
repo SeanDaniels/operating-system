@@ -1,6 +1,7 @@
 /* send.c - send */
 
-#include <xinu.h>
+#include "../include/xinu.h"
+#define DBG
 
 /*------------------------------------------------------------------------
  *  send  -  Pass a message to a process and start recipient if waiting
@@ -22,8 +23,12 @@ syscall	send(
 
 	prptr = &proctab[pid];
 	if (prptr->prhasmsg) {
+		#ifdef DBG
+		kprintf("Process %d already has message\n", pid);
+		resched();
 		restore(mask);
-		return SYSERR;
+		return OK;
+		#endif
 	}
 	prptr->prmsg = msg;		/* Deliver message		*/
 	prptr->prhasmsg = TRUE;		/* Indicate message is waiting	*/
