@@ -3,7 +3,7 @@
 *.log
 tmp/
 
-
 binaries/
-**/.ccls-cache/**
-**/.ccls/**
+.ccls-cache/
+.ccls/
+minicom.cap
