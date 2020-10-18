@@ -1,0 +1,157 @@
+#+TITLE: Fork Creation
+* Step 1
+- Copy from stack base to frame base
+* Step 2
+- Update all base pointers to point to locations within the child stack
+* Step 3
+- Initialize registers
+* DBG
+TESTCASE-1]
+HELLO! I am process 6
+****Copy from 5D3FFC (A0AAAA9) to 5D3FF0 (5D3FFC)****
+Saving pointer to 0
+Parent stack ----- Child stack
+(5D3FFC) A0AAAA9 ----- (5D1FFC) A0AAAA9
+(5D3FF8) 0 ----- (5D1FF8) 0
+(5D3FF4) 105903 ----- (5D1FF4) 105903
+***At FP (Location: 5D3FF0 Value: 5D3FFC)***
+Value in child stack: (5D1FF0) 5D1FFC
+****Copy from 5D3FEC (0) to 5D3FD0 (5D3FF0)****
+Saving pointer to 0
+Parent stack ----- Child stack
+(5D3FEC) 0 ----- (5D1FEC) 0
+(5D3FE8) 200 ----- (5D1FE8) 200
+(5D3FE4) 0 ----- (5D1FE4) 0
+(5D3FE0) 0 ----- (5D1FE0) 0
+(5D3FDC) 0 ----- (5D1FDC) 0
+(5D3FD8) 0 ----- (5D1FD8) 0
+(5D3FD4) 103126 ----- (5D1FD4) 103126
+***At FP (Location: 5D3FD0 Value: 5D3FF0)***
+Value in child stack: (5D1FD0) 5D1FEC
+* Child Stack
+| Initial Child Stack Addr | Stack Magic |
+|                          |             |
+* Code
+#+BEGIN_SRC c
+unsigned long* stack_copy(unsigned long* framePointer){
+    unsigned long *temp = NULL;
+    unsigned long *correction = NULL;
+    uint32 savePointer;
+    //found sm
+    if(*framePointer==STACKMAGIC)
+        return framePointer;
+    // temp will equal a pointer to the previous frame pointer
+    temp = stack_copy(*framePointer);
+
+    kprintf("\nCopy from %X (%X) to %X (%X)\nStarting at child stack address (%X)\n", temp, *temp, framePointer, *framePointer, childStackAddr);
+    //save framepointer location
+    savePointer = (uint32)childStackAddr;
+    kprintf("Saving pointer to %X\n", savePointer);
+    kprintf("Child stack address: %X\n", childStackAddr);
+    kprintf("Parent stack ----- Child stack\n");
+    //iterate and copy until next fp
+    correction = framePointer-1;
+    if(*framePointer==STACKMAGIC){
+        while(temp>framePointer){
+            //copy from parentStack[x] to childStack[x]
+            ,*childStackAddr=*temp;
+            kprintf("(%X) %X ----- (%X) %X\n", temp, *temp, childStackAddr, *childStackAddr);
+            childStackAddr--;
+            temp--;
+        }
+    }
+    while(temp>framePointer){
+        //copy from parentStack[x] to childStack[x]
+        ,*childStackAddr=*temp;
+        kprintf("(%X) %X ----- (%X) %X\n", temp, *temp, childStackAddr, *childStackAddr);
+        childStackAddr--;
+        temp--;
+    }
+    ,*childStackAddr=savePointer;
+    childStackAddr--;
+    return(framePointer-1);
+}
+#+END_SRC
+** Call with base pointer
+- *basepointer != SM
+- call stack copy with pointer two
+** Call with pointer two
+- *pointertwo != SM
+- call stack copy with pointer three
+- temp = pointer three
+- savePointer = current child stack address
+- while(pointerthree>pointertwo){
+    copy
+  }
+** Call with pointer three
+- *pointerthree == stack magic
+- return pointer three to call from pointer two
+* Stack Trace
+Starting at child stack address (5D1FFC)
+copy from 5D3FFC (A0AAAA9) to 5D3FF0 (5D3FFC)
+Copy from 5D3FEC (0) to 5D3FD0 (5D3FF0)
+Saving pointer to 5D1FFC
+Child stack address: 5D1FFC
+
+Save child stack frame pointer (5D1FFC) into child stack address (5D1FF0)
+New child stack entry:
+(5D1FF0) 5D1FFC
+Returning updated framepointer:(1) 0
+
+Starting at child stack address (5D1FEC)                                        
+Saving pointer to 5D1FF0                                                        
+Child stack address: 5D1FEC                                                     
+Parent stack ----- Child stack
+(5D3FEC) 0 ----- (5D1FEC) 0
+(5D3FE8) 200 ----- (5D1FE8) 200
+(5D3FE4) 0 ----- (5D1FE4) 0
+(5D3FE0) 0 ----- (5D1FE0) 0
+(5D3FDC) 0 ----- (5D1FDC) 0
+(5D3FD8) 0 ----- (5D1FD8) 0
+(5D3FD4) 1031B3 ----- (5D1FD4) 1031B3
+
+At next FP: (5D3FD0) 5D3FF0
+
+Save child stack frame pointer (5D1FF0) into child stack address (5D1FD0)
+New child stack entry:
+(5D1FD0) 5D1FF0
+Returning updated framepointer:(1) 121000
+
+Child process stack base: 5D1FFC
+Child stack address: 5D1FEC
+Parent stack ----- Child stack
+(5D3FEC) 0 ----- (5D1FEC) 0
+(5D3FE8) 200 ----- (5D1FE8) 200
+(5D3FE4) 0 ----- (5D1FE4) 0
+(5D3FE0) 0 ----- (5D1FE0) 0
+(5D3FDC) 0 ----- (5D1FDC) 0
+(5D3FD8) 0 ----- (5D1FD8) 0
+(5D3FD4) 1031B3 ----- (5D1FD4) 1031B3
+
+At next FP: (5D3FD0) 5D3FF0
+
+Save child stack frame pointer (5D1FF0) into child stack address (5D1FD0)
+New child stack entry:
+Returning updated framepointer:(1) 121000                                       
+                                                                                
+Child process stack base: 5D1FFC                                                
+'someValue': 5D3FCC                                                             
+'bottomOfStack: 5D1FCC                                                          
+Current child stack addr: 5D1FCC                                                
+process 6:: forked child 7                                                      
+Attempting to receive.
+
+*stack
+Parent stack ----- Child stack
+(5D3FFC) A0AAAA9 ----- (5D1FFC) A0AAAA9                                         
+(5D3FF8) 0 -----       (5D1FF8) 0
+(5D3FF4) 105990 -----  (5D1FF4) 105990
+                       (5D1FF0) 5D1FFC
+(5D3FEC) 0 -----       (5D1FEC) 0
+(5D3FE8) 200 -----     (5D1FE8) 200
+(5D3FE4) 0 -----       (5D1FE4) 0
+(5D3FE0) 0 -----       (5D1FE0) 0
+(5D3FDC) 0 -----       (5D1FDC) 0
+(5D3FD8) 0 -----       (5D1FD8) 0
+(5D3FD4) 1031B3 -----  (5D1FD4) 1031B3
+                -----  (5D1FD0) 5D1FF0

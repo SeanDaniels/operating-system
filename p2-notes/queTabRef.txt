@@ -1,0 +1,45 @@
+queue.c:struct qentry	queuetab[NQENT];	/* Table of process queues	*/
+queue.c:	prev = queuetab[tail].qprev;
+queue.c:	queuetab[pid].qnext  = tail;	/* Insert just before tail node	*/
+queue.c:	queuetab[pid].qprev  = prev;
+queue.c:	queuetab[prev].qnext = pid;
+queue.c:	queuetab[tail].qprev = pid;
+queue.c:	queuetab[pid].qprev = EMPTY;
+queue.c:	queuetab[pid].qnext = EMPTY;
+printready.c:    qid16 head_next = queuetab[head].qnext;
+printready.c:    qid16 tail_next = queuetab[tail].qnext;
+printready.c:        next = queuetab[next].qnext;
+insert.c:	while (queuetab[curr].qkey >= key) {
+insert.c:		curr = queuetab[curr].qnext;
+insert.c:	prev = queuetab[curr].qprev;	/* Get index of previous node	*/
+insert.c:	queuetab[pid].qnext = curr;
+insert.c:	queuetab[pid].qprev = prev;
+insert.c:	queuetab[pid].qkey = key;
+insert.c:	queuetab[prev].qnext = pid;
+insert.c:	queuetab[curr].qprev = pid;
+getitem.c:	return getitem(queuetab[head].qnext);
+getitem.c:	return getitem(queuetab[tail].qprev);
+getitem.c:	next = queuetab[pid].qnext;	/* Following node in list	*/
+getitem.c:	prev = queuetab[pid].qprev;	/* Previous node in list	*/
+getitem.c:	queuetab[prev].qnext = next;
+getitem.c:	queuetab[next].qprev = prev;
+clkhandler.c:		if((--queuetab[firstid(sleepq)].qkey) <= 0) {
+insertd.c:	next = queuetab[queuehead(q)].qnext;
+insertd.c:	while ((next != queuetail(q)) && (queuetab[next].qkey <= key)) {
+insertd.c:		key -= queuetab[next].qkey;
+insertd.c:		next = queuetab[next].qnext;
+insertd.c:	queuetab[pid].qnext = next;
+insertd.c:	queuetab[pid].qprev = prev;
+insertd.c:	queuetab[pid].qkey = key;
+insertd.c:	queuetab[prev].qnext = pid;
+insertd.c:	queuetab[next].qprev = pid;
+insertd.c:		queuetab[next].qkey -= key;
+unsleep.c:	pidnext = queuetab[pid].qnext;
+unsleep.c:		queuetab[pidnext].qkey += queuetab[pid].qkey;
+newqueue.c:	static qid16	nextqid=NPROC;	/* Next list in queuetab to use	*/
+newqueue.c:	queuetab[queuehead(q)].qnext = queuetail(q);
+newqueue.c:	queuetab[queuehead(q)].qprev = EMPTY;
+newqueue.c:	queuetab[queuehead(q)].qkey  = MAXKEY;
+newqueue.c:	queuetab[queuetail(q)].qnext = EMPTY;
+newqueue.c:	queuetab[queuetail(q)].qprev = queuehead(q);
+newqueue.c:	queuetab[queuetail(q)].qkey  = MINKEY;
