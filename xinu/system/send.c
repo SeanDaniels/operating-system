@@ -24,10 +24,8 @@ syscall	send(
 	prptr = &proctab[pid];
 
 	while(prptr->prhasmsg) {
-#ifdef DBG
-		kprintf("Process %d already has message\n", pid);
-#endif
 		ready(currpid);
+		return OK;
 	}
 
 	prptr->prmsg = msg;		/* Deliver message		*/

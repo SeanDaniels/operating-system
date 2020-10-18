@@ -3,6 +3,8 @@
 #include "../include/xinu.h"
 
 struct	defer	Defer;
+//#define RESCHED_CNTL_DBG
+#define RECEIVE_DBG
 
 /*------------------------------------------------------------------------
  *  resched  -  Reschedule processor to highest priority eligible process
@@ -23,7 +25,11 @@ void	resched(void)		/* Assumes interrupts are disabled	*/
 	/* Point to process table entry for the current (old) process */
 
 	ptold = &proctab[currpid];
-
+#ifdef RECEIVE_DBG
+	if(currpid == 0 ){
+		kprintf("In resched, current process: %d\n", currpid);
+	}
+#endif
 	if (ptold->prstate == PR_CURR) {  /* Process remains eligible */
 		if (ptold->prprio > firstkey(readylist)) {
 			return;
@@ -56,6 +62,9 @@ status	resched_cntl(		/* Assumes interrupts are disabled	*/
 	  int32	defer		/* Either DEFER_START or DEFER_STOP	*/
 	)
 {
+#ifdef RESCHED_CNTL_DBG
+	kprintf("Process %d in resched_cntl\n", currpid);
+#endif
 	switch (defer) {
 
 	    case DEFER_START:	/* Handle a deferral request */

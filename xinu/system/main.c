@@ -1,6 +1,13 @@
 #include "../include/xinu.h"
 #include <stdio.h>
 #define DBG
+//#define LOCKOUTPUT
+#define RECEIVEOUTPUT
+//#define TESTCASE1
+//#define TESTCASE2
+//#define TESTCASE3
+//#define TESTCASE4
+#define TESTCASE5
 
 void sync_printf(char *fmt, ...)
 {
@@ -14,15 +21,23 @@ void sync_printf(char *fmt, ...)
 process increment(uint32 *x, uint32 n, sl_lock_t *mutex){
 	uint32 i, j;
 	for (i=0; i<n; i++){
+        #ifdef LOCKOUTPUT
         kprintf("\nThread %d before critical section\n", currpid);
+        #endif
 		sl_lock(mutex);
+        #ifdef LOCKOUTPUT
         kprintf("\nThread %d in critical section-->\n", currpid);
+        #endif
 		(*x)+=1;
 		for (j=0; j<1000; j++);
 		yield();
+       #ifdef LOCKOUTPUT
         kprintf("-->Thread %d exiting critical section\n", currpid);
+#endif // LOCKOUTPUT
 		sl_unlock(mutex);
+        #ifdef LOCKOUTPUT
         kprintf("Thread %d has unlocked\n", currpid);
+        #endif
 	}
     return OK;
 }
@@ -45,8 +60,11 @@ process nthreads(uint32 nt, uint32 *x, uint32 n, sl_lock_t *mutex){
 		}
 	}
     for (i=0; i < nt; i++){
-        kprintf("Receiving %d\n", i);
+        uint32 start_time = clktime;
         receive();
+        #ifdef RECEIVEOUTPUT
+        kprintf("Received %d\n", i);
+        #endif
     }
 	return OK;
 }
@@ -59,34 +77,67 @@ process	main(void)
     pid32 owner;
 
     uint32 x;
-    unsigned nt, value=10;
+    unsigned nt;
+    unsigned value = 1000;
     sl_lock_t mutex;
 
-	kprintf("\n\n=====     Testing the SPINLOCK's implementation     =====\n");
+    kprintf("\n\n=====     Testing the SPINLOCK's implementation     =====\n");
+#ifdef TESTCASE1
+    kprintf("\n\n=====     Test 1 ---- 10 threads =====\n");
     x = 0;
     nt = 10;
-    // unlocked = 0
-    // locked = 1
     sl_initlock(&mutex);
-	resume(create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex));
+    resume(create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex));
     receive();
     sync_printf("%d threads, n = %d, target value = %d\n", nt, value, x);
-	if (x==value) kprintf("TEST PASSED.\n"); else kprintf("TEST FAILED.\n");
+    if (x==value) kprintf("TEST PASSED.\n"); else kprintf("TEST FAILED.\n");
+#endif
 
-/* basic mutex testing  */
-/*     old_val = mutex.lock_value; */
-/*     owner = mutex.lock_owner; */
-/*     sync_printf("\nSpinlock created, lock value = %d, lock owner = %X\n", old_val, owner); */
-/*     sl_lock(&mutex); */
-/*     owner = mutex.lock_owner; */
-/*     old_val = mutex.lock_value; */
-/*     sync_printf("\nSpinlock locked, lock value = %d, lock owner = %X\n", old_val, owner); */
-/* end of basic mutex testing */
+#ifdef TESTCASE2
+    kprintf("\n\n=====     Test 2 ---- 20 threads =====\n");
+    x = 0;
+    nt = 20;
+    sl_initlock(&mutex);
+    resume(create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex));
+    receive();
+    sync_printf("%d threads, n=%d, target value=%d\n", nt, value, x);
+    if (x==value) kprintf("TEST PASSED.\n"); else kprintf("TEST FAILED.\n");
+#endif
 
-    /* returnVal = test_and_set(pointer_to_old_val, new_val); */
-    /* sync_printf("Return value: %x\n", returnVal); */
+#ifdef TESTCASE3
+    kprintf("\n\n=====     Test 3 ---- 25 threads =====\n");
+    x = 0;
+    nt = 25;
+    sl_initlock(&mutex);
+    resume(create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex));
+    receive();
+    sync_printf("%d threads, n=%d, target value=%d\n", nt, value, x);
+    if (x==value) kprintf("TEST PASSED.\n"); else kprintf("TEST FAILED.\n");
+#endif
+
+#ifdef TESTCASE4
+    kprintf("\n\n================= TEST 4 = 40 threads ===================\n");
+    x = 0;
+    nt = 40;
+    sl_initlock(&mutex);
+    resume(create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex));
+    receive();
+    sync_printf("%d threads, n=%d, target value=%d\n", nt, value, x);
+    if (x==value) kprintf("TEST PASSED.\n"); else kprintf("TEST FAILED.\n");
+#endif
+
+#ifdef TESTCASE5
+    kprintf("\n\n================= TEST 5 = 50 threads ===================\n");
+    x = 0;
+    nt = 50;
+    sl_initlock(&mutex);
+    resume(create((void *)nthreads, INITSTK, 1,"nthreads", 4, nt, &x, value/nt, &mutex));
+    receive();
+    sync_printf("%d threads, n=%d, target value=%d\n", nt, value, x);
+    if (x==value) kprintf("TEST PASSED.\n"); else kprintf("TEST FAILED.\n");
+#endif
+
     sync_printf("\nMain Process Done\n");
-
     return OK;
-    
+
 }

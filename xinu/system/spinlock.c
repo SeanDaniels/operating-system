@@ -1,10 +1,13 @@
 #include "../include/xinu.h"
-#define DBG
+//#define DBG
+//#define LOCKOUTPUT
 /* LOCKED = 1  */
 /* UNLOCKED = 0 */
 syscall sl_initlock(sl_lock_t *l){
     static uint32 available_locks = NPSINLOCKS;
+#ifdef LOCKOUTPUT
     kprintf("Initializing lock\n");
+#endif
     if(!available_locks){
         return SYSERR;
     }
@@ -14,29 +17,29 @@ syscall sl_initlock(sl_lock_t *l){
     return OK;
 }
 syscall sl_lock(sl_lock_t *l){
-    #ifdef DBG
+#ifdef LOCKOUTPUT
     kprintf("\nThread %d attempting critical section\n", currpid);
-    #endif
+#endif
     while(test_and_set(&(l->lock_value), 1)==1);
-    #ifdef DBG
+#ifdef LOCKOUTPUT
     kprintf("Lock retrieved, setting owner to thread %d\n", currpid);
-    #endif
+#endif
     l->lock_owner = currpid;
     return OK;
 }
 syscall sl_unlock(sl_lock_t *l){
-#ifdef DBG
+#ifdef LOCKOUTPUT
     kprintf("Thread %d attempting to release lock\n", currpid);
-#endif // DBG
+#endif
     if(l->lock_owner!=currpid){
-#ifdef DBG
+#ifdef LOCKOUTPUT
         kprintf("**Error (thread %d not lock owner)**\n", currpid);
-#endif // MACRO
+#endif
        return SYSERR;
     }
     l->lock_value = UNLOCKED;
     l->lock_owner = (pid32) 0;
-#ifdef DBG
+#ifdef LOCKOUTPUT
     kprintf("Thread %d released lock\n");
 #endif
     return OK;

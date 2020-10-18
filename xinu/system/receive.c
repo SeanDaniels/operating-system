@@ -13,14 +13,12 @@ umsg32	receive(void)
 	intmask	mask;			/* Saved interrupt mask		*/
 	struct	procent *prptr;		/* Ptr to process's table entry	*/
 	umsg32	msg;			/* Message to return		*/
-#ifdef DBG
-	kprintf("Receiving message for process %d\n", currpid);
-#endif
 	mask = disable();
 	prptr = &proctab[currpid];
 	if (prptr->prhasmsg == FALSE) {
 #ifdef DBG
-		kprintf("Waiting on msg, blocking\n", currpid);
+		// when waiting on a message, the system does not return here after calling resched
+		kprintf("Waiting on msg, blocking\n");
 #endif
 		prptr->prstate = PR_RECV;
 		resched();		/* Block until message arrives	*/
