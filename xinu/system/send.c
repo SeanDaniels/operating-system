@@ -24,7 +24,11 @@ syscall	send(
 	prptr = &proctab[pid];
 
 	while(prptr->prhasmsg) {
+#ifdef DBG
+		kprintf("Process has msg: %s\n", prptr->prmsg);
+#endif
 		ready(currpid);
+		restore(mask);
 		return OK;
 	}
 

@@ -4,7 +4,7 @@
 
 struct	defer	Defer;
 //#define RESCHED_CNTL_DBG
-#define RECEIVE_DBG
+//#define RECEIVE_DBG
 
 /*------------------------------------------------------------------------
  *  resched  -  Reschedule processor to highest priority eligible process
@@ -26,9 +26,6 @@ void	resched(void)		/* Assumes interrupts are disabled	*/
 
 	ptold = &proctab[currpid];
 #ifdef RECEIVE_DBG
-	if(currpid == 0 ){
-		kprintf("In resched, current process: %d\n", currpid);
-	}
 #endif
 	if (ptold->prstate == PR_CURR) {  /* Process remains eligible */
 		if (ptold->prprio > firstkey(readylist)) {

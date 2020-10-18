@@ -61,6 +61,9 @@ process nthreads(uint32 nt, uint32 *x, uint32 n, sl_lock_t *mutex){
 	}
     for (i=0; i < nt; i++){
         uint32 start_time = clktime;
+        #ifdef RECEIVEOUTPUT
+        kprintf("Attempting to receive %d\n", i);
+        #endif
         receive();
         #ifdef RECEIVEOUTPUT
         kprintf("Received %d\n", i);
