@@ -1,6 +1,6 @@
 /* ready.c - ready */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 qid16	readylist;			/* Index of ready list		*/
 
@@ -19,7 +19,6 @@ status	ready(
 	}
 
 	/* Set process state to indicate ready and add to ready list */
-
 	prptr = &proctab[pid];
 	prptr->prstate = PR_READY;
 	insert(pid, readylist, prptr->prprio);

@@ -1,6 +1,6 @@
 /* read.c - read */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 /*------------------------------------------------------------------------
  *  read  -  Read one or more bytes from a device

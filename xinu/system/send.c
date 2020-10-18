@@ -12,9 +12,10 @@ syscall	send(
 	  umsg32	msg		/* Contents of message		*/
 	)
 {
+	/*  If send was invoked from kill, the pid is that of the parent process */
 	intmask	mask;			/* Saved interrupt mask		*/
 	struct	procent *prptr;		/* Ptr to process's table entry	*/
-
+	
 	mask = disable();
 	if (isbadpid(pid)) {
 		restore(mask);
@@ -24,12 +25,8 @@ syscall	send(
 	prptr = &proctab[pid];
 
 	while(prptr->prhasmsg) {
-#ifdef DBG
-		kprintf("Process has msg: %s\n", prptr->prmsg);
-#endif
+		//while the parent process has a message, place the parent process in the ready list
 		ready(currpid);
-		restore(mask);
-		return OK;
 	}
 
 	prptr->prmsg = msg;		/* Deliver message		*/

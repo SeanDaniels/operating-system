@@ -29,7 +29,9 @@ syscall	kill(
 	kprintf("Trying to kill process 0\n");
 	kprintf("Process 0's state is %d\n", prptr->prstate);
 #endif
+
 	/*  let parent process know that child process has finished */
+	/*  Process is done, ready to be terminated */
 	send(prptr->prparent, pid);
 
 	for (i=0; i<3; i++) {
