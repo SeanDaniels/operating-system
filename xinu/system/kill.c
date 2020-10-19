@@ -31,7 +31,8 @@ syscall	kill(
 #endif
 
 	/*  let parent process know that child process has finished */
-	/*  Process is done, ready to be terminated */
+	/*  Process is done, ready to be terminated
+	 * call the send function, passing this processes parent's id */
 	send(prptr->prparent, pid);
 
 	for (i=0; i<3; i++) {
