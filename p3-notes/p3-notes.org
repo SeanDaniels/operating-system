@@ -63,6 +63,16 @@ end of basic mutex testing
 returnVal = test_and_set(pointer_to_old_val, new_val);
 sync_printf("Return value: %x\n", returnVal);
 #+END_SRC
+* lock
+- add the following
+  - syscall initlock(lock_t *t)
+  - syscall lock(lock_t *t)
+  - syscall unlocklock(lock_t *t)
+- implement
+  - park
+  - unpark
+  - setpark
+  - http://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf
 
 * Stack Information
 #+BEGIN_SRC C

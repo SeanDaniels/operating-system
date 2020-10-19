@@ -1,6 +1,6 @@
 /* queue.c - enqueue, dequeue */
 
-#include <xinu.h>
+#include "../include/xinu.h"
 
 struct qentry	queuetab[NQENT];	/* Table of process queues	*/
 
