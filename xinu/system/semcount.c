@@ -20,7 +20,9 @@ syscall semcount(
 		restore(mask);
 		return SYSERR;
 	}
+
 	count = semtab[semid].scount;
 	restore(mask);
+
 	return count;
 }

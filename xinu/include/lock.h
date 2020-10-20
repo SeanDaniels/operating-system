@@ -10,9 +10,11 @@ typedef struct{
     pid32 lock_owner;
 } sl_lock_t;
 
-typedef struct _lock_t{
+struct lock_t{
     uint32 flag;
     uint32 guard;
-    qid16 q;
-}lock_t;
+    qid16 queue;
+};
+
+extern struct  lock_t locktab[];
 
