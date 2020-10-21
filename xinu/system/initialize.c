@@ -21,8 +21,6 @@ struct	procent	proctab[NPROC];	/* Process table			*/
 struct	sentry	semtab[NSEM];	/* Semaphore table			*/
 struct	memblk	memlist;	/* List of free memory blocks		*/
 
-/*  table containing locks */
-struct  lock_t  locktab[NLOCKS];
 
 /* Active system status */
 
@@ -205,13 +203,6 @@ static	void	sysinit()
 		semptr->squeue = newqueue();
 	}
 
-	/*  initialize locks */
-	for( i = 0; i < NLOCKS; i++){
-		lockptr = &locktab[i];
-		lockptr->flag = 0;
-		lock->gaurd = 0;
-		lock->queue = newqueue();
-	}
 
 	/* Initialize buffer pools */
 
