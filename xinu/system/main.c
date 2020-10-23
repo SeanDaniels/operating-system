@@ -19,7 +19,7 @@ void sync_printf(char *fmt, ...) {
 }
 
 /* pass shared variable, lock */
-process increment(uint32 *x, uint32 n, lock_t *mutex) {
+process increment(uint32 *x, uint32 n, sl_lock_t *mutex) {
   uint32 i, j;
   for (i = 0; i < n; i++) {
     lock(mutex);
@@ -41,7 +41,7 @@ process increment(uint32 *x, uint32 n, lock_t *mutex) {
   return OK;
 }
 
-process nthreads(uint32 nt, uint32 *x, uint32 n, lock_t *mutex) {
+process nthreads(uint32 nt, uint32 *x, uint32 n, sl_lock_t *mutex) {
   pid32 pids[nt];
   int i;
   for (i = 0; i < nt; i++) {
