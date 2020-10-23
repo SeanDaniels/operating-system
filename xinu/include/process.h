@@ -52,7 +52,9 @@ struct procent {       /* Entry in the process table		*/
   uint32 prlock;       /* lock on which the process waits */
   uint32
       park_flag; /* flag for parking the process, used in lock implementation */
-  umsg32 prmsg;  /* Message sent to this process		*/
+  uint32 runtime;
+  uint32 run_start;
+  umsg32 prmsg;        /* Message sent to this process		*/
   bool8 prhasmsg;      /* Nonzero iff msg is valid		*/
   int16 prdesc[NDESC]; /* Device descriptors for process	*/
 };
