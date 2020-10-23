@@ -7,9 +7,6 @@
 - no need to implement lock delete function
 - return syserr if max number of locks of a particular type is reached
 - unlock system calls return syserr if process tries to release a lock that it doesnt own
-* Tasks
-- Provide assembly implementation of atomic test_and_set function
-- Implement spinlock based on test_and_set
 * Spinlock
 - needs initialization
 - needs lock function
@@ -73,6 +70,16 @@ sync_printf("Return value: %x\n", returnVal);
   - unpark
   - setpark
   - http://pages.cs.wisc.edu/~remzi/OSTEP/threads-locks.pdf
+* al_lock
+- Automatically detect the presence of deadlocks due to circular deps
+  (dead locks involving multiple locks)
+- Notify presence of deadlock as soon as deadlock is originiated
+- Locks originate when a cyclic dep is created, lock detection code should be part of init
+- Lock detection should be part of al_lock system call
+** Deadlock
+lock 1 -> waiting on -> lock 2
+lock 2 -> waiting on -> lock 3
+lock 3 -> waiting on -> lock 1
 
 * Stack Information
 #+BEGIN_SRC C
@@ -164,3 +171,4 @@ add_func:
     popl %ebp
     ret
 #+END_SRC
+* Deadlock

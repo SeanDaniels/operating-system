@@ -1,10 +1,10 @@
 #include "../include/xinu.h"
 #define LOCK_DBG
-int32 parkFlag = 0;
 
 syscall initlock(lock_t *l) {
   int mask;
   mask = disable();
+  kprintf("Mutex passed: %X, Address of mutex passed: %X\n", l, &l);
   l->flag = 0;
   l->guard = 0;
   l->queue = newqueue();
@@ -13,7 +13,8 @@ syscall initlock(lock_t *l) {
 }
 
 syscall lock(lock_t *l) {
-  while (test_and_set(&(l->guard), 1) == 1);
+  while (test_and_set(&(l->guard), 1) == 1)
+    ;
   if (l->flag == 0) {
     l->flag = 1;
     l->guard = 0;
@@ -27,7 +28,8 @@ syscall lock(lock_t *l) {
 }
 
 syscall unlock(lock_t *l) {
-  while (test_and_set(&(l->guard), 1) == 1);
+  while (test_and_set(&(l->guard), 1) == 1)
+    ;
   if (isempty(l->queue)) {
     l->flag = 0;
   } else {
@@ -37,36 +39,39 @@ syscall unlock(lock_t *l) {
   return OK;
 }
 
-syscall setPark(){
+syscall setPark() {
   int mask;
   mask = disable();
-  parkFlag = 1;
+  struct procent *prptr = &proctab[currpid];
+  prptr->park_flag = 1;
   restore(mask);
   return OK;
 }
 
-syscall park(){
+syscall park() {
   int mask;
-  mask  = disable();
-    struct procent *prptr;
-    if(parkFlag==1){
-      prptr = &proctab[currpid];
-      prptr->prstate = PR_WAIT;
-      resched();
-      parkFlag = 0;
-      restore(mask);
-      return OK;
-    }
-#ifdef LOCK_DBG
-    kprintf("Set park has been disabled by some other thread\n");
-#endif
-    return OK;
-}
-
-syscall unpark(pid32 thread){
-    int mask = disable();
-    parkFlag = 0;
-    ready(thread);
+  mask = disable();
+  struct procent *prptr;
+  prptr = &proctab[currpid];
+  if (prptr->park_flag == 1) {
+    prptr->prstate = PR_WAIT;
+    resched();
+    prptr->park_flag = 0;
     restore(mask);
     return OK;
+  }
+#ifdef LOCK_DBG
+  kprintf("Set park has been disabled by some other thread\n");
+#endif
+  return OK;
+}
+
+syscall unpark(pid32 thread) {
+  int mask;
+  mask = disable();
+  struct procent *prptr = &proctab[thread];
+  prptr->park_flag = 0;
+  ready(thread);
+  restore(mask);
+  return OK;
 }
