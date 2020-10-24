@@ -1,0 +1,1166 @@
+diff -u /home/swd/operating-system/xinu/system/ /home/swd/xinu-fresh/xinu/system
+Only in /home/swd/operating-system/xinu/system/: active_lock.c
+Only in /home/swd/operating-system/xinu/system/: assembly_test.c
+diff -u /home/swd/operating-system/xinu/system/clkhandler.c /home/swd/xinu-fresh/xinu/system/clkhandler.c
+--- /home/swd/operating-system/xinu/system/clkhandler.c	2020-10-23 17:40:00.400386206 -0400
++++ /home/swd/xinu-fresh/xinu/system/clkhandler.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,45 +1,45 @@
+ /* clkhandler.c - clkhandler */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  * clkhandler - high level clock interrupt handler
+  *------------------------------------------------------------------------
+  */
+-void clkhandler() {
+-  static uint32 count1000 = 1000; /* Count to 1000 ms	*/
++void	clkhandler()
++{
++	static	uint32	count1000 = 1000;	/* Count to 1000 ms	*/
+ 
+-  ctr1000++;
+-  /* Decrement the ms counter, and see if a second has passed */
++	/* Decrement the ms counter, and see if a second has passed */
+ 
+-  if ((--count1000) <= 0) {
++	if((--count1000) <= 0) {
+ 
+-    /* One second has passed, so increment seconds count */
++		/* One second has passed, so increment seconds count */
+ 
+-    clktime++;
++		clktime++;
+ 
+-    /* Reset the local ms counter for the next second */
++		/* Reset the local ms counter for the next second */
+ 
+-    count1000 = 1000;
+-  }
++		count1000 = 1000;
++	}
+ 
+-  /* Handle sleeping processes if any exist */
++	/* Handle sleeping processes if any exist */
+ 
+-  if (!isempty(sleepq)) {
++	if(!isempty(sleepq)) {
+ 
+-    /* Decrement the delay for the first process on the	*/
+-    /*   sleep queue, and awaken if the count reaches zero	*/
++		/* Decrement the delay for the first process on the	*/
++		/*   sleep queue, and awaken if the count reaches zero	*/
+ 
+-    if ((--queuetab[firstid(sleepq)].qkey) <= 0) {
+-      wakeup();
+-    }
+-  }
++		if((--queuetab[firstid(sleepq)].qkey) <= 0) {
++			wakeup();
++		}
++	}
+ 
+-  /* Decrement the preemption counter, and reschedule when the */
+-  /*   remaining time reaches zero			     */
++	/* Decrement the preemption counter, and reschedule when the */
++	/*   remaining time reaches zero			     */
+ 
+-  if ((--preempt) <= 0) {
+-    preempt = QUANTUM;
+-    resched();
+-  }
++	if((--preempt) <= 0) {
++		preempt = QUANTUM;
++		resched();
++	}
+ }
+diff -u /home/swd/operating-system/xinu/system/create.c /home/swd/xinu-fresh/xinu/system/create.c
+--- /home/swd/operating-system/xinu/system/create.c	2020-10-24 18:19:48.583567558 -0400
++++ /home/swd/xinu-fresh/xinu/system/create.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,118 +1,121 @@
+ /* create.c - create, newpid */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+-local int newpid();
++local	int newpid();
+ 
+ /*------------------------------------------------------------------------
+  *  create  -  Create a process to start running a function on x86
+  *------------------------------------------------------------------------
+  */
+-pid32 create(void *funcaddr, /* Address of the function	*/
+-             uint32 ssize,   /* Stack size in bytes		*/
+-             pri16 priority, /* Process priority > 0		*/
+-             char *name,     /* Name (for debugging)		*/
+-             uint32 nargs,   /* Number of args that follow	*/
+-             ...) {
+-
+-  uint32 savsp, *pushsp;
+-  intmask mask;          /* Interrupt mask		*/
+-  pid32 pid;             /* Stores new process id	*/
+-  struct procent *prptr; /* Pointer to proc. table entry */
+-  int32 i;
+-  uint32 *a;     /* Points to list of args	*/
+-  uint32 *saddr; /* Stack address		*/
+-
+-  mask = disable();
+-  if (ssize < MINSTK)
+-    ssize = MINSTK;
+-  ssize = (uint32)roundmb(ssize);
+-  if ((priority < 1) || ((pid = newpid()) == SYSERR) ||
+-      ((saddr = (uint32 *)getstk(ssize)) == (uint32 *)SYSERR)) {
+-    restore(mask);
+-    return SYSERR;
+-  }
+-
+-  prcount++;
+-  prptr = &proctab[pid];
+-  /* Initialize process table entry for new process */
+-  prptr->prstate = PR_SUSP; /* Initial state is suspended	*/
+-  prptr->prprio = priority;
+-  prptr->prstkbase = (char *)saddr;
+-  prptr->prstklen = ssize;
+-  prptr->prname[PNMLEN - 1] = NULLCH;
+-  prptr->runtime = 0;
+-  for (i = 0; i < PNMLEN - 1 && (prptr->prname[i] = name[i]) != NULLCH; i++)
+-    ;
+-  prptr->prsem = -1;
+-  prptr->prparent = (pid32)getpid();
+-  prptr->prhasmsg = FALSE;
+-
+-  /* Set up stdin, stdout, and stderr descriptors for the shell	*/
+-  prptr->prdesc[0] = CONSOLE;
+-  prptr->prdesc[1] = CONSOLE;
+-  prptr->prdesc[2] = CONSOLE;
+-
+-  /* Initialize stack as if the process was called		*/
+-
+-  *saddr = STACKMAGIC;
+-  savsp = (uint32)saddr;
+-
+-  /* Push arguments */
+-  a = (uint32 *)(&nargs + 1); /* Start of args		*/
+-  a += nargs - 1;             /* Last argument		*/
+-  for (; nargs > 0; nargs--)  /* Machine dependent; copy args	*/
+-    *--saddr = *a--;          /* onto created process's stack	*/
+-  *--saddr = (long)INITRET;   /* Push on return address	*/
+-
+-  /* The following entries on the stack must match what ctxsw	*/
+-  /*   expects a saved process state to contain: ret address,	*/
+-  /*   ebp, interrupt mask, flags, registers, and an old SP	*/
+-
+-  *--saddr = (long)funcaddr; /* Make the stack look like it's*/
+-                             /*   half-way through a call to	*/
+-                             /*   ctxsw that "returns" to the*/
+-                             /*   new process		*/
+-  *--saddr = savsp;          /* This will be register ebp	*/
+-                             /*   for process exit		*/
+-  savsp = (uint32)saddr;     /* Start of frame for ctxsw	*/
+-  *--saddr = 0x00000200;     /* New process runs with	*/
+-                             /*   interrupts enabled		*/
+-
+-  /* Basically, the following emulates an x86 "pushal" instruction*/
+-
+-  *--saddr = 0;     /* %eax */
+-  *--saddr = 0;     /* %ecx */
+-  *--saddr = 0;     /* %edx */
+-  *--saddr = 0;     /* %ebx */
+-  *--saddr = 0;     /* %esp; value filled in below	*/
+-  pushsp = saddr;   /* Remember this location	*/
+-  *--saddr = savsp; /* %ebp (while finishing ctxsw)	*/
+-  *--saddr = 0;     /* %esi */
+-  *--saddr = 0;     /* %edi */
+-  *pushsp = (unsigned long)(prptr->prstkptr = (char *)saddr);
+-  restore(mask);
+-  return pid;
++pid32	create(
++	  void		*funcaddr,	/* Address of the function	*/
++	  uint32	ssize,		/* Stack size in bytes		*/
++	  pri16		priority,	/* Process priority > 0		*/
++	  char		*name,		/* Name (for debugging)		*/
++	  uint32	nargs,		/* Number of args that follow	*/
++	  ...
++	)
++{
++	uint32		savsp, *pushsp;
++	intmask 	mask;    	/* Interrupt mask		*/
++	pid32		pid;		/* Stores new process id	*/
++	struct	procent	*prptr;		/* Pointer to proc. table entry */
++	int32		i;
++	uint32		*a;		/* Points to list of args	*/
++	uint32		*saddr;		/* Stack address		*/
++
++	mask = disable();
++	if (ssize < MINSTK)
++		ssize = MINSTK;
++	ssize = (uint32) roundmb(ssize);
++	if ( (priority < 1) || ((pid=newpid()) == SYSERR) ||
++	     ((saddr = (uint32 *)getstk(ssize)) == (uint32 *)SYSERR) ) {
++		restore(mask);
++		return SYSERR;
++	}
++
++	prcount++;
++	prptr = &proctab[pid];
++
++	/* Initialize process table entry for new process */
++	prptr->prstate = PR_SUSP;	/* Initial state is suspended	*/
++	prptr->prprio = priority;
++	prptr->prstkbase = (char *)saddr;
++	prptr->prstklen = ssize;
++	prptr->prname[PNMLEN-1] = NULLCH;
++	for (i=0 ; i<PNMLEN-1 && (prptr->prname[i]=name[i])!=NULLCH; i++)
++		;
++	prptr->prsem = -1;
++	prptr->prparent = (pid32)getpid();
++	prptr->prhasmsg = FALSE;
++
++	/* Set up stdin, stdout, and stderr descriptors for the shell	*/
++	prptr->prdesc[0] = CONSOLE;
++	prptr->prdesc[1] = CONSOLE;
++	prptr->prdesc[2] = CONSOLE;
++
++	/* Initialize stack as if the process was called		*/
++
++	*saddr = STACKMAGIC;
++	savsp = (uint32)saddr;
++
++	/* Push arguments */
++	a = (uint32 *)(&nargs + 1);	/* Start of args		*/
++	a += nargs -1;			/* Last argument		*/
++	for ( ; nargs > 0 ; nargs--)	/* Machine dependent; copy args	*/
++		*--saddr = *a--;	/* onto created process's stack	*/
++	*--saddr = (long)INITRET;	/* Push on return address	*/
++
++	/* The following entries on the stack must match what ctxsw	*/
++	/*   expects a saved process state to contain: ret address,	*/
++	/*   ebp, interrupt mask, flags, registers, and an old SP	*/
++
++	*--saddr = (long)funcaddr;	/* Make the stack look like it's*/
++					/*   half-way through a call to	*/
++					/*   ctxsw that "returns" to the*/
++					/*   new process		*/
++	*--saddr = savsp;		/* This will be register ebp	*/
++					/*   for process exit		*/
++	savsp = (uint32) saddr;		/* Start of frame for ctxsw	*/
++	*--saddr = 0x00000200;		/* New process runs with	*/
++					/*   interrupts enabled		*/
++
++	/* Basically, the following emulates an x86 "pushal" instruction*/
++
++	*--saddr = 0;			/* %eax */
++	*--saddr = 0;			/* %ecx */
++	*--saddr = 0;			/* %edx */
++	*--saddr = 0;			/* %ebx */
++	*--saddr = 0;			/* %esp; value filled in below	*/
++	pushsp = saddr;			/* Remember this location	*/
++	*--saddr = savsp;		/* %ebp (while finishing ctxsw)	*/
++	*--saddr = 0;			/* %esi */
++	*--saddr = 0;			/* %edi */
++	*pushsp = (unsigned long) (prptr->prstkptr = (char *)saddr);
++	restore(mask);
++	return pid;
+ }
+ 
+ /*------------------------------------------------------------------------
+  *  newpid  -  Obtain a new (free) process ID
+  *------------------------------------------------------------------------
+  */
+-local pid32 newpid(void) {
+-  uint32 i;                 /* Iterate through all processes*/
+-  static pid32 nextpid = 1; /* Position in table to try or	*/
+-                            /*   one beyond end of table	*/
+-
+-  /* Check all NPROC slots */
+-
+-  for (i = 0; i < NPROC; i++) {
+-    nextpid %= NPROC; /* Wrap around to beginning */
+-    if (proctab[nextpid].prstate == PR_FREE) {
+-      return nextpid++;
+-    } else {
+-      nextpid++;
+-    }
+-  }
+-  return (pid32)SYSERR;
++local	pid32	newpid(void)
++{
++	uint32	i;			/* Iterate through all processes*/
++	static	pid32 nextpid = 1;	/* Position in table to try or	*/
++					/*   one beyond end of table	*/
++
++	/* Check all NPROC slots */
++
++	for (i = 0; i < NPROC; i++) {
++		nextpid %= NPROC;	/* Wrap around to beginning */
++		if (proctab[nextpid].prstate == PR_FREE) {
++			return nextpid++;
++		} else {
++			nextpid++;
++		}
++	}
++	return (pid32) SYSERR;
+ }
+diff -u /home/swd/operating-system/xinu/system/getitem.c /home/swd/xinu-fresh/xinu/system/getitem.c
+--- /home/swd/operating-system/xinu/system/getitem.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/getitem.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* getitem.c - getfirst, getlast, getitem */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  getfirst  -  Remove a process from the front of a queue
+diff -u /home/swd/operating-system/xinu/system/initialize.c /home/swd/xinu-fresh/xinu/system/initialize.c
+--- /home/swd/operating-system/xinu/system/initialize.c	2020-10-24 18:19:36.024858524 -0400
++++ /home/swd/xinu-fresh/xinu/system/initialize.c	2016-08-29 16:51:23.000000000 -0400
+@@ -2,34 +2,33 @@
+ 
+ /* Handle system initialization and become the null process */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ #include <string.h>
+ 
+-extern void start(void); /* Start of Xinu code			*/
+-extern void *_end;       /* End of Xinu code			*/
++extern	void	start(void);	/* Start of Xinu code			*/
++extern	void	*_end;		/* End of Xinu code			*/
+ 
+ /* Function prototypes */
+ 
+-extern void main(void);      /* Main is the first process created	*/
+-static void sysinit();       /* Internal system initialization	*/
+-extern void meminit(void);   /* Initializes the free memory list	*/
+-local process startup(void); /* Process to finish startup tasks	*/
++extern	void main(void);	/* Main is the first process created	*/
++static	void sysinit(); 	/* Internal system initialization	*/
++extern	void meminit(void);	/* Initializes the free memory list	*/
++local	process startup(void);	/* Process to finish startup tasks	*/
+ 
+ /* Declarations of major kernel variables */
+ 
+-struct procent proctab[NPROC]; /* Process table			*/
+-struct sentry semtab[NSEM];    /* Semaphore table			*/
+-struct memblk memlist;         /* List of free memory blocks		*/
++struct	procent	proctab[NPROC];	/* Process table			*/
++struct	sentry	semtab[NSEM];	/* Semaphore table			*/
++struct	memblk	memlist;	/* List of free memory blocks		*/
+ 
+-// struct al_lock_t al_locktab[NALOCKS];
+ /* Active system status */
+ 
+-int prcount;   /* Total number of live processes	*/
+-pid32 currpid; /* ID of currently executing process	*/
++int	prcount;		/* Total number of live processes	*/
++pid32	currpid;		/* ID of currently executing process	*/
+ 
+ /* Control sequence to reset the console colors and cusor positiion	*/
+ 
+-#define CONSOLE_RESET " \033[0m\033[2J\033[;H"
++#define	CONSOLE_RESET	" \033[0m\033[2J\033[;H"
+ 
+ /*------------------------------------------------------------------------
+  * nulluser - initialize the system and become the null process
+@@ -45,52 +44,59 @@
+  *------------------------------------------------------------------------
+  */
+ 
+-void nulluser() {
+-  struct memblk *memptr; /* Ptr to memory block		*/
+-  uint32 free_mem;       /* Total amount of free memory	*/
++void	nulluser()
++{	
++	struct	memblk	*memptr;	/* Ptr to memory block		*/
++	uint32	free_mem;		/* Total amount of free memory	*/
++	
++	/* Initialize the system */
++
++	sysinit();
++
++	/* Output Xinu memory layout */
++	free_mem = 0;
++	for (memptr = memlist.mnext; memptr != NULL;
++						memptr = memptr->mnext) {
++		free_mem += memptr->mlength;
++	}
++	kprintf("%10d bytes of free memory.  Free list:\n", free_mem);
++	for (memptr=memlist.mnext; memptr!=NULL;memptr = memptr->mnext) {
++	    kprintf("           [0x%08X to 0x%08X]\n",
++		(uint32)memptr, ((uint32)memptr) + memptr->mlength - 1);
++	}
++
++	kprintf("%10d bytes of Xinu code.\n",
++		(uint32)&etext - (uint32)&text);
++	kprintf("           [0x%08X to 0x%08X]\n",
++		(uint32)&text, (uint32)&etext - 1);
++	kprintf("%10d bytes of data.\n",
++		(uint32)&ebss - (uint32)&data);
++	kprintf("           [0x%08X to 0x%08X]\n\n",
++		(uint32)&data, (uint32)&ebss - 1);
++
++	/* Enable interrupts */
++
++	enable();
++
++	/* Initialize the network stack and start processes */
++
++	net_init();
++
++	/* Create a process to finish startup and start main */
++
++	resume(create((void *)startup, INITSTK, INITPRIO,
++					"Startup process", 0, NULL));
++
++	/* Become the Null process (i.e., guarantee that the CPU has	*/
++	/*  something to run when no other process is ready to execute)	*/
++
++	while (TRUE) {
++		;		/* Do nothing */
++	}
+ 
+-  /* Initialize the system */
+-
+-  sysinit();
+-
+-  /* Output Xinu memory layout */
+-  free_mem = 0;
+-  for (memptr = memlist.mnext; memptr != NULL; memptr = memptr->mnext) {
+-    free_mem += memptr->mlength;
+-  }
+-  kprintf("%10d bytes of free memory.  Free list:\n", free_mem);
+-  for (memptr = memlist.mnext; memptr != NULL; memptr = memptr->mnext) {
+-    kprintf("           [0x%08X to 0x%08X]\n", (uint32)memptr,
+-            ((uint32)memptr) + memptr->mlength - 1);
+-  }
+-
+-  kprintf("%10d bytes of Xinu code.\n", (uint32)&etext - (uint32)&text);
+-  kprintf("           [0x%08X to 0x%08X]\n", (uint32)&text, (uint32)&etext - 1);
+-  kprintf("%10d bytes of data.\n", (uint32)&ebss - (uint32)&data);
+-  kprintf("           [0x%08X to 0x%08X]\n\n", (uint32)&data,
+-          (uint32)&ebss - 1);
+-
+-  /* Enable interrupts */
+-
+-  enable();
+-
+-  /* Initialize the network stack and start processes */
+-
+-  net_init();
+-
+-  /* Create a process to finish startup and start main */
+-
+-  resume(
+-      create((void *)startup, INITSTK, INITPRIO, "Startup process", 0, NULL));
+-
+-  /* Become the Null process (i.e., guarantee that the CPU has	*/
+-  /*  something to run when no other process is ready to execute)	*/
+-
+-  while (TRUE) {
+-    ; /* Do nothing */
+-  }
+ }
+ 
++
+ /*------------------------------------------------------------------------
+  *
+  * startup  -  Finish startup takss that cannot be run from the Null
+@@ -98,130 +104,137 @@
+  *
+  *------------------------------------------------------------------------
+  */
+-local process startup(void) {
+-  uint32 ipaddr; /* Computer's IP address	*/
+-  char str[128]; /* String used to format output	*/
+-
+-  /* Use DHCP to obtain an IP address and format it */
+-
+-  ipaddr = getlocalip();
+-  if ((int32)ipaddr == SYSERR) {
+-    kprintf("Cannot obtain an IP address\n");
+-  } else {
+-    /* Print the IP in dotted decimal and hex */
+-    ipaddr = NetData.ipucast;
+-    sprintf(str, "%d.%d.%d.%d", (ipaddr >> 24) & 0xff, (ipaddr >> 16) & 0xff,
+-            (ipaddr >> 8) & 0xff, ipaddr & 0xff);
++local process	startup(void)
++{
++	uint32	ipaddr;			/* Computer's IP address	*/
++	char	str[128];		/* String used to format output	*/
++
++
++	/* Use DHCP to obtain an IP address and format it */
++
++	ipaddr = getlocalip();
++	if ((int32)ipaddr == SYSERR) {
++		kprintf("Cannot obtain an IP address\n");
++	} else {
++		/* Print the IP in dotted decimal and hex */
++		ipaddr = NetData.ipucast;
++		sprintf(str, "%d.%d.%d.%d",
++			(ipaddr>>24)&0xff, (ipaddr>>16)&0xff,
++			(ipaddr>>8)&0xff,        ipaddr&0xff);
++	
++		kprintf("Obtained IP address  %s   (0x%08x)\n", str,
++								ipaddr);
++	}
+ 
+-    kprintf("Obtained IP address  %s   (0x%08x)\n", str, ipaddr);
+-  }
++	/* Create a process to execute function main() */
+ 
+-  /* Create a process to execute function main() */
++	resume(create((void *)main, INITSTK, INITPRIO,
++					"Main process", 0, NULL));
+ 
+-  resume(create((void *)main, INITSTK, INITPRIO, "Main process", 0, NULL));
++	/* Startup process exits at this point */
+ 
+-  /* Startup process exits at this point */
+-
+-  return OK;
++	return OK;
+ }
+ 
++
+ /*------------------------------------------------------------------------
+  *
+  * sysinit  -  Initialize all Xinu data structures and devices
+  *
+  *------------------------------------------------------------------------
+  */
+-static void sysinit() {
+-  int32 i;
+-  struct procent *prptr; /* Ptr to process table entry	*/
+-  struct sentry *semptr; /* Ptr to semaphore table entry	*/
+-
+-  /* Reset the console */
+-
+-  kprintf(CONSOLE_RESET);
+-  kprintf("\n%s\n\n", VERSION);
++static	void	sysinit()
++{
++	int32	i;
++	struct	procent	*prptr;		/* Ptr to process table entry	*/
++	struct	sentry	*semptr;	/* Ptr to semaphore table entry	*/
+ 
+-  /* Initialize the interrupt vectors */
++	/* Reset the console */
+ 
+-  initevec();
++	kprintf(CONSOLE_RESET);
++	kprintf("\n%s\n\n", VERSION);
+ 
+-  /* Initialize free memory list */
++	/* Initialize the interrupt vectors */
+ 
+-  meminit();
++	initevec();
++	
++	/* Initialize free memory list */
++	
++	meminit();
+ 
+-  /* Initialize system variables */
++	/* Initialize system variables */
+ 
+-  /* Count the Null process as the first process in the system */
++	/* Count the Null process as the first process in the system */
+ 
+-  prcount = 1;
++	prcount = 1;
+ 
+-  /* Scheduling is not currently blocked */
++	/* Scheduling is not currently blocked */
+ 
+-  Defer.ndefers = 0;
++	Defer.ndefers = 0;
+ 
+-  /* Initialize process table entries free */
++	/* Initialize process table entries free */
+ 
+-  for (i = 0; i < NPROC; i++) {
+-    prptr = &proctab[i];
+-    prptr->prstate = PR_FREE;
+-    prptr->prname[0] = NULLCH;
+-    prptr->prstkbase = NULL;
+-    prptr->prprio = 0;
+-    prptr->prlock = -1;
+-    prptr->park_flag = 0;
+-  }
++	for (i = 0; i < NPROC; i++) {
++		prptr = &proctab[i];
++		prptr->prstate = PR_FREE;
++		prptr->prname[0] = NULLCH;
++		prptr->prstkbase = NULL;
++		prptr->prprio = 0;
++	}
+ 
+-  /* Initialize the Null process entry */
++	/* Initialize the Null process entry */	
+ 
+-  prptr = &proctab[NULLPROC];
+-  prptr->prstate = PR_CURR;
+-  prptr->prlock = -1;
+-  prptr->prprio = 0;
+-  strncpy(prptr->prname, "prnull", 7);
+-  prptr->prstkbase = getstk(NULLSTK);
+-  prptr->prstklen = NULLSTK;
+-  prptr->prstkptr = 0;
+-  currpid = NULLPROC;
++	prptr = &proctab[NULLPROC];
++	prptr->prstate = PR_CURR;
++	prptr->prprio = 0;
++	strncpy(prptr->prname, "prnull", 7);
++	prptr->prstkbase = getstk(NULLSTK);
++	prptr->prstklen = NULLSTK;
++	prptr->prstkptr = 0;
++	currpid = NULLPROC;
++	
++	/* Initialize semaphores */
+ 
+-  /* Initialize semaphores */
++	for (i = 0; i < NSEM; i++) {
++		semptr = &semtab[i];
++		semptr->sstate = S_FREE;
++		semptr->scount = 0;
++		semptr->squeue = newqueue();
++	}
+ 
+-  for (i = 0; i < NSEM; i++) {
+-    semptr = &semtab[i];
+-    semptr->sstate = S_FREE;
+-    semptr->scount = 0;
+-    semptr->squeue = newqueue();
+-  }
++	/* Initialize buffer pools */
+ 
+-  /* Initialize buffer pools */
++	bufinit();
+ 
+-  bufinit();
++	/* Create a ready list for processes */
+ 
+-  /* Create a ready list for processes */
++	readylist = newqueue();
+ 
+-  readylist = newqueue();
+ 
+-  /* initialize the PCI bus */
++	/* initialize the PCI bus */
+ 
+-  pci_init();
++	pci_init();
+ 
+-  /* Initialize the real time clock */
++	/* Initialize the real time clock */
+ 
+-  clkinit();
++	clkinit();
+ 
+-  for (i = 0; i < NDEVS; i++) {
+-    init(i);
+-  }
+-  return;
++	for (i = 0; i < NDEVS; i++) {
++		init(i);
++	}
++	return;
+ }
+ 
+-int32 stop(char *s) {
+-  kprintf("%s\n", s);
+-  kprintf("looping... press reset\n");
+-  while (1)
+-    /* Empty */;
++int32	stop(char *s)
++{
++	kprintf("%s\n", s);
++	kprintf("looping... press reset\n");
++	while(1)
++		/* Empty */;
+ }
+ 
+-int32 delay(int n) {
+-  DELAY(n);
+-  return OK;
++int32	delay(int n)
++{
++	DELAY(n);
++	return OK;
+ }
+diff -u /home/swd/operating-system/xinu/system/insert.c /home/swd/xinu-fresh/xinu/system/insert.c
+--- /home/swd/operating-system/xinu/system/insert.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/insert.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* insert.c - insert */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  insert  -  Insert a process into a queue in descending key order
+diff -u /home/swd/operating-system/xinu/system/kill.c /home/swd/xinu-fresh/xinu/system/kill.c
+--- /home/swd/operating-system/xinu/system/kill.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/kill.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,8 +1,7 @@
+ /* kill.c - kill */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+-//#define LOCK_DBG
+ /*------------------------------------------------------------------------
+  *  kill  -  Kill a process and remove it from the system
+  *------------------------------------------------------------------------
+@@ -25,16 +24,8 @@
+ 	if (--prcount <= 1) {		/* Last user process completes	*/
+ 		xdone();
+ 	}
+-#ifdef LOCK_DBG
+-	kprintf("Trying to kill process 0\n");
+-	kprintf("Process 0's state is %d\n", prptr->prstate);
+-#endif
+-
+-	/*  let parent process know that child process has finished */
+-	/*  Process is done, ready to be terminated
+-	 * call the send function, passing this processes parent's id */
+-	send(prptr->prparent, pid);
+ 
++	send(prptr->prparent, pid);
+ 	for (i=0; i<3; i++) {
+ 		close(prptr->prdesc[i]);
+ 	}
+@@ -47,9 +38,6 @@
+ 
+ 	case PR_SLEEP:
+ 	case PR_RECTIM:
+-		#ifdef LOCK_DBG
+-		kprintf("Trying to kill timed out/sleeping process %d\n", pid);
+-		#endif
+ 		unsleep(pid);
+ 		prptr->prstate = PR_FREE;
+ 		break;
+Only in /home/swd/operating-system/xinu/system/: lock.c
+diff -u /home/swd/operating-system/xinu/system/main.c /home/swd/xinu-fresh/xinu/system/main.c
+--- /home/swd/operating-system/xinu/system/main.c	2020-10-24 18:34:07.515620787 -0400
++++ /home/swd/xinu-fresh/xinu/system/main.c	2020-02-09 09:43:02.000000000 -0500
+@@ -1,71 +1,22 @@
+-#include "../include/xinu.h"
+-#include <stdio.h>
+-#define DBG
+-#define DEADLOCK
+-void sync_printf(char *fmt, ...) {
+-  intmask mask = disable();
+-  void *arg = __builtin_apply_args();
+-  __builtin_apply((void *)kprintf, arg, 100);
+-  restore(mask);
+-}
++/*  main.c  - main */
+ 
+-void run_for_ms(uint32 time) {
+-  uint32 start = proctab[currpid].runtime;
+-  while (proctab[currpid].runtime - start < time)
+-    ;
+-}
+-/* pass shared variable, lock */
++#include <xinu.h>
+ 
+-process lock_routine_a(al_lock_t *l_a, al_lock_t *l_b) {
+-  uint32 i;
+-  for (i = 0; i < 2; i++) {
+-    al_lock(l_a);
+-#ifdef DBG
+-    kprintf("Process %d has aquired lock %X\n", currpid, l_a->lock_number);
+-#endif
+-    run_for_ms(1000);
+-    al_lock(l_b);
+-#ifdef DBG
+-    kprintf("Process %d has aquired lock %X\n", currpid, l_b->lock_number);
+-#endif
+-    run_for_ms(1000);
+-    al_unlock(l_b);
+-    al_unlock(l_a);
+-  }
+-  return OK;
+-}
++process	main(void)
++{
++	/* Run the Xinu shell */
+ 
+-process lock_routine_b(al_lock_t *l_a, al_lock_t *l_b) {
+-  uint32 i;
+-  for (i = 0; i < 2; i++) {
+-    al_lock(l_b);
+-#ifdef DBG
+-    kprintf("Process %d has aquired lock %X\n", currpid, l_b->lock_number);
+-#endif
+-    run_for_ms(1000);
+-    al_lock(l_a);
+-#ifdef DBG
+-    kprintf("Process %d has aquired lock %X\n", currpid, l_a->lock_number);
+-#endif
+-    run_for_ms(1000);
+-    al_unlock(l_a);
+-    al_unlock(l_b);
+-  }
+-  return OK;
+-}
++	recvclr();
++	resume(create(shell, 8192, 50, "shell", 1, CONSOLE));
++
++	/* Wait for shell to exit and recreate it */
+ 
+-process main(void) {
+-  pid32 pid1, pid2;
+-  al_lock_t l_a, l_b;
+-  al_initlock(&l_a);
+-  al_initlock(&l_b);
+-  pid1 = create((void *)lock_routine_a, INITSTK, 1, "lr_a", 2, &l_a, &l_b);
+-  pid2 = create((void *)lock_routine_b, INITSTK, 1, "lr_b", 2, &l_a, &l_b);
+-  resume(pid1);
+-  sleepms(500);
+-  resume(pid2);
+-  receive();
+-  receive();
+-  sync_printf("\nDone\n");
+-  return OK;
++	while (TRUE) {
++		receive();
++		sleepms(200);
++		kprintf("\n\nMain process recreating shell\n\n");
++		resume(create(shell, 4096, 20, "shell", 1, CONSOLE));
++	}
++	return OK;
++    
+ }
+diff -u /home/swd/operating-system/xinu/system/newqueue.c /home/swd/xinu-fresh/xinu/system/newqueue.c
+--- /home/swd/operating-system/xinu/system/newqueue.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/newqueue.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* newqueue.c - newqueue */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  newqueue  -  Allocate and initialize a queue in the global queue table
+diff -u /home/swd/operating-system/xinu/system/queue.c /home/swd/xinu-fresh/xinu/system/queue.c
+--- /home/swd/operating-system/xinu/system/queue.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/queue.c	2018-10-13 01:37:50.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* queue.c - enqueue, dequeue */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ struct qentry	queuetab[NQENT];	/* Table of process queues	*/
+ 
+@@ -50,20 +50,3 @@
+ 	queuetab[pid].qnext = EMPTY;
+ 	return pid;
+ }
+-void print_q(qid16 q){
+-	pid32 pid;
+-	pid32 key;
+-	if (isbadqid(q)) {
+-		kprintf("Bad qid\n");
+-		return;
+-	} else if (isempty(q)) {
+-		kprintf("Empty q\n");
+-		return;
+-	}
+-	pid = firstid(q);
+-	while(queuetab[pid].qnext!=EMPTY){
+-		kprintf("Queue PID: %d\n", pid);
+-		pid = queuetab[pid].qnext;
+-	}
+-	return;
+-}
+diff -u /home/swd/operating-system/xinu/system/read.c /home/swd/xinu-fresh/xinu/system/read.c
+--- /home/swd/operating-system/xinu/system/read.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/read.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* read.c - read */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  read  -  Read one or more bytes from a device
+diff -u /home/swd/operating-system/xinu/system/ready.c /home/swd/xinu-fresh/xinu/system/ready.c
+--- /home/swd/operating-system/xinu/system/ready.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/ready.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* ready.c - ready */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ qid16	readylist;			/* Index of ready list		*/
+ 
+@@ -19,6 +19,7 @@
+ 	}
+ 
+ 	/* Set process state to indicate ready and add to ready list */
++
+ 	prptr = &proctab[pid];
+ 	prptr->prstate = PR_READY;
+ 	insert(pid, readylist, prptr->prprio);
+diff -u /home/swd/operating-system/xinu/system/receive.c /home/swd/xinu-fresh/xinu/system/receive.c
+--- /home/swd/operating-system/xinu/system/receive.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/receive.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,8 +1,6 @@
+ /* receive.c - receive */
+ 
+-#include "../include/xinu.h"
+-
+-//#define DBG
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  receive  -  Wait for a message and return the message to the caller
+@@ -13,13 +11,10 @@
+ 	intmask	mask;			/* Saved interrupt mask		*/
+ 	struct	procent *prptr;		/* Ptr to process's table entry	*/
+ 	umsg32	msg;			/* Message to return		*/
++
+ 	mask = disable();
+ 	prptr = &proctab[currpid];
+ 	if (prptr->prhasmsg == FALSE) {
+-#ifdef DBG
+-		// when waiting on a message, the system does not return here after calling resched
+-		kprintf("Waiting on msg, blocking\n");
+-#endif
+ 		prptr->prstate = PR_RECV;
+ 		resched();		/* Block until message arrives	*/
+ 	}
+diff -u /home/swd/operating-system/xinu/system/recvclr.c /home/swd/xinu-fresh/xinu/system/recvclr.c
+--- /home/swd/operating-system/xinu/system/recvclr.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/recvclr.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* recvclr.c - recvclr */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  recvclr  -  Clear incoming message, and return message if one waiting
+diff -u /home/swd/operating-system/xinu/system/resched.c /home/swd/xinu-fresh/xinu/system/resched.c
+--- /home/swd/operating-system/xinu/system/resched.c	2020-10-23 17:46:55.308975851 -0400
++++ /home/swd/xinu-fresh/xinu/system/resched.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,89 +1,80 @@
+ /* resched.c - resched, resched_cntl */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+-struct defer Defer;
+-
+-uint32 get_timestamp() { return ctr1000; }
+-//#define RESCHED_CNTL_DBG
+-//#define RECEIVE_DBG
++struct	defer	Defer;
+ 
+ /*------------------------------------------------------------------------
+  *  resched  -  Reschedule processor to highest priority eligible process
+  *------------------------------------------------------------------------
+  */
+-void resched(void) /* Assumes interrupts are disabled	*/
++void	resched(void)		/* Assumes interrupts are disabled	*/
+ {
+-  struct procent *ptold; /* Ptr to table entry for old process	*/
+-  struct procent *ptnew; /* Ptr to table entry for new process	*/
++	struct procent *ptold;	/* Ptr to table entry for old process	*/
++	struct procent *ptnew;	/* Ptr to table entry for new process	*/
++
++	/* If rescheduling is deferred, record attempt and return */
+ 
+-  /* If rescheduling is deferred, record attempt and return */
++	if (Defer.ndefers > 0) {
++		Defer.attempt = TRUE;
++		return;
++	}
+ 
+-  if (Defer.ndefers > 0) {
+-    Defer.attempt = TRUE;
+-    return;
+-  }
++	/* Point to process table entry for the current (old) process */
+ 
+-  /* Point to process table entry for the current (old) process */
++	ptold = &proctab[currpid];
+ 
+-  ptold = &proctab[currpid];
++	if (ptold->prstate == PR_CURR) {  /* Process remains eligible */
++		if (ptold->prprio > firstkey(readylist)) {
++			return;
++		}
+ 
+-  if (ptold->prstate == PR_CURR) { /* Process remains eligible */
+-    if (ptold->prprio > firstkey(readylist)) {
+-      ptold->runtime += (ctr1000 - ptold->run_start);
+-      ptold->run_start = ctr1000;
+-      return;
+-    }
++		/* Old process will no longer remain current */
+ 
+-    /* Old process will no longer remain current */
+-    ptold->runtime += ctr1000 - ptold->run_start;
+-    ptold->prstate = PR_READY;
+-    insert(currpid, readylist, ptold->prprio);
+-  }
++		ptold->prstate = PR_READY;
++		insert(currpid, readylist, ptold->prprio);
++	}
+ 
+-  /* Force context switch to highest priority ready process */
++	/* Force context switch to highest priority ready process */
+ 
+-  currpid = dequeue(readylist);
+-  ptnew = &proctab[currpid];
+-  ptnew->prstate = PR_CURR;
+-  ptnew->run_start = ctr1000;
+-  preempt = QUANTUM; /* Reset time slice for process	*/
+-  ctxsw(&ptold->prstkptr, &ptnew->prstkptr);
++	currpid = dequeue(readylist);
++	ptnew = &proctab[currpid];
++	ptnew->prstate = PR_CURR;
++	preempt = QUANTUM;		/* Reset time slice for process	*/
++	ctxsw(&ptold->prstkptr, &ptnew->prstkptr);
+ 
+-  /* Old process returns here when resumed */
++	/* Old process returns here when resumed */
+ 
+-  return;
++	return;
+ }
+ 
+ /*------------------------------------------------------------------------
+  *  resched_cntl  -  Control whether rescheduling is deferred or allowed
+  *------------------------------------------------------------------------
+  */
+-status resched_cntl(            /* Assumes interrupts are disabled	*/
+-                    int32 defer /* Either DEFER_START or DEFER_STOP	*/
+-) {
+-#ifdef RESCHED_CNTL_DBG
+-  kprintf("Process %d in resched_cntl\n", currpid);
+-#endif
+-  switch (defer) {
+-
+-  case DEFER_START: /* Handle a deferral request */
+-
+-    if (Defer.ndefers++ == 0) {
+-      Defer.attempt = FALSE;
+-    }
+-    return OK;
+-
+-  case DEFER_STOP: /* Handle end of deferral */
+-    if (Defer.ndefers <= 0) {
+-      return SYSERR;
+-    }
+-    if ((--Defer.ndefers == 0) && Defer.attempt) {
+-      resched();
+-    }
+-    return OK;
+-
+-  default:
+-    return SYSERR;
+-  }
++status	resched_cntl(		/* Assumes interrupts are disabled	*/
++	  int32	defer		/* Either DEFER_START or DEFER_STOP	*/
++	)
++{
++	switch (defer) {
++
++	    case DEFER_START:	/* Handle a deferral request */
++
++		if (Defer.ndefers++ == 0) {
++			Defer.attempt = FALSE;
++		}
++		return OK;
++
++	    case DEFER_STOP:	/* Handle end of deferral */
++		if (Defer.ndefers <= 0) {
++			return SYSERR;
++		}
++		if ( (--Defer.ndefers == 0) && Defer.attempt ) {
++			resched();
++		}
++		return OK;
++
++	    default:
++		return SYSERR;
++	}
+ }
+diff -u /home/swd/operating-system/xinu/system/semcount.c /home/swd/xinu-fresh/xinu/system/semcount.c
+--- /home/swd/operating-system/xinu/system/semcount.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/semcount.c	2016-08-23 19:40:45.000000000 -0400
+@@ -20,9 +20,7 @@
+ 		restore(mask);
+ 		return SYSERR;
+ 	}
+-
+ 	count = semtab[semid].scount;
+ 	restore(mask);
+-
+ 	return count;
+ }
+diff -u /home/swd/operating-system/xinu/system/semcreate.c /home/swd/xinu-fresh/xinu/system/semcreate.c
+--- /home/swd/operating-system/xinu/system/semcreate.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/semcreate.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,6 +1,6 @@
+ /* semcreate.c - semcreate, newsem */
+ 
+-#include "../include/xinu.h"
++#include <xinu.h>
+ 
+ local	sid32	newsem(void);
+ 
+diff -u /home/swd/operating-system/xinu/system/send.c /home/swd/xinu-fresh/xinu/system/send.c
+--- /home/swd/operating-system/xinu/system/send.c	2020-10-23 16:53:11.724808294 -0400
++++ /home/swd/xinu-fresh/xinu/system/send.c	2016-08-23 19:40:45.000000000 -0400
+@@ -1,7 +1,6 @@
+ /* send.c - send */
+ 
+-#include "../include/xinu.h"
+-#define DBG
++#include <xinu.h>
+ 
+ /*------------------------------------------------------------------------
+  *  send  -  Pass a message to a process and start recipient if waiting
+@@ -12,10 +11,9 @@
+ 	  umsg32	msg		/* Contents of message		*/
+ 	)
+ {
+-	/*  If send was invoked from kill, the pid is that of the parent process */
+ 	intmask	mask;			/* Saved interrupt mask		*/
+ 	struct	procent *prptr;		/* Ptr to process's table entry	*/
+-	
++
+ 	mask = disable();
+ 	if (isbadpid(pid)) {
+ 		restore(mask);
+@@ -23,12 +21,10 @@
+ 	}
+ 
+ 	prptr = &proctab[pid];
+-
+-	while(prptr->prhasmsg) {
+-		//while the parent process has a message, place the parent process in the ready list
+-		ready(currpid);
++	if (prptr->prhasmsg) {
++		restore(mask);
++		return SYSERR;
+ 	}
+-
+ 	prptr->prmsg = msg;		/* Deliver message		*/
+ 	prptr->prhasmsg = TRUE;		/* Indicate message is waiting	*/
+ 
+Only in /home/swd/operating-system/xinu/system/: spinlock.c
+Only in /home/swd/operating-system/xinu/system/: testandset.S
+
+Diff finished.  Sat Oct 24 19:29:11 2020
