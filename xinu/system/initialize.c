@@ -167,12 +167,15 @@ static void sysinit() {
     prptr->prname[0] = NULLCH;
     prptr->prstkbase = NULL;
     prptr->prprio = 0;
+    prptr->prlock = -1;
+    prptr->park_flag = 0;
   }
 
   /* Initialize the Null process entry */
 
   prptr = &proctab[NULLPROC];
   prptr->prstate = PR_CURR;
+  prptr->prlock = -1;
   prptr->prprio = 0;
   strncpy(prptr->prname, "prnull", 7);
   prptr->prstkbase = getstk(NULLSTK);

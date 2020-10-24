@@ -1,10 +1,12 @@
 #include "../include/xinu.h"
-#define LOCK_DBG
+//#define LOCK_DBG
 
 syscall initlock(lock_t *l) {
   int mask;
   mask = disable();
+#ifdef LOCK_DBG
   kprintf("Mutex passed: %X, Address of mutex passed: %X\n", l, &l);
+#endif
   l->flag = 0;
   l->guard = 0;
   l->queue = newqueue();
