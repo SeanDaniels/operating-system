@@ -13,3 +13,5 @@ xinu/compile/version
 xinu/compile/xinu.elf
 xinu/compile/xinu.map
 xinu/compile/.*
+xinu/temp/*
+xinu/compile/mini_out.txt
