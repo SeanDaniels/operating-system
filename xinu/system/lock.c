@@ -43,6 +43,9 @@ syscall setPark() {
   int mask;
   mask = disable();
   struct procent *prptr = &proctab[currpid];
+#ifdef LOCK_DBG
+  kprintf("Setting park flag\n");
+#endif
   prptr->park_flag = 1;
   restore(mask);
   return OK;

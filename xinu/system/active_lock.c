@@ -38,7 +38,7 @@ syscall al_lock(al_lock_t *l) {
     enqueue(currpid, l->queue);
     setPark();
     l->guard = 0;
-    park();
+    al_park(l);
   }
   return OK;
 }
@@ -63,14 +63,16 @@ syscall al_park(al_lock_t *l) {
   if (prptr->park_flag == 1) {
     prptr->prstate = PR_WAIT;
     prptr->prlock = l->lock_number;
+#ifdef LOCK_DBG
+    kprintf("Process %d has been parked, waiting on lock %X\n", currpid,
+            prptr->prlock);
+    kprintf("Lock %X is owned by process %d\n", l->lock_number, l->owner);
+#endif
     resched();
     prptr->park_flag = 0;
     restore(mask);
     return OK;
   }
-#ifdef LOCK_DBG
-  kprintf("Set park has been disabled by some other thread\n");
-#endif
   return OK;
 }
 

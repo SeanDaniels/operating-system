@@ -20,8 +20,14 @@ process lock_routine_a(al_lock_t *l_a, al_lock_t *l_b) {
   uint32 i;
   for (i = 0; i < 2; i++) {
     al_lock(l_a);
+#ifdef DBG
+    kprintf("Process 1 has aquired lock 'a'\n");
+#endif
     run_for_ms(1000);
     al_lock(l_b);
+#ifdef DBG
+    kprintf("Process 1 has aquired lock 'b'\n");
+#endif
     run_for_ms(1000);
     al_unlock(l_b);
     al_unlock(l_a);
@@ -33,8 +39,14 @@ process lock_routine_b(al_lock_t *l_a, al_lock_t *l_b) {
   uint32 i;
   for (i = 0; i < 2; i++) {
     al_lock(l_b);
+#ifdef DBG
+    kprintf("Process 2 has aquired lock 'b'\n");
+#endif
     run_for_ms(1000);
     al_lock(l_a);
+#ifdef DBG
+    kprintf("Process 2 has aquired lock 'a'\n");
+#endif
     run_for_ms(1000);
     al_unlock(l_a);
     al_unlock(l_b);
@@ -45,10 +57,22 @@ process lock_routine_b(al_lock_t *l_a, al_lock_t *l_b) {
 process main(void) {
   pid32 pid1, pid2;
   al_lock_t l_a, l_b;
-  al_init_lock(&l_a);
-  al_init_lock(&l_b);
+  al_initlock(&l_a);
+#ifdef DBG
+  kprintf("Lock 'a' initd\n");
+#endif
+  al_initlock(&l_b);
+#ifdef DBG
+  kprintf("Lock 'b' initd\n");
+#endif
   pid1 = create((void *)lock_routine_a, INITSTK, 1, "lr_a", 2, &l_a, &l_b);
+#ifdef DBG
+  kprintf("Lock routine 'a' process created\n");
+#endif
   pid2 = create((void *)lock_routine_b, INITSTK, 1, "lr_b", 2, &l_a, &l_b);
+#ifdef DBG
+  kprintf("Lock routine 'b' process created\n");
+#endif
   resume(pid1);
   sleepms(500);
   resume(pid2);
