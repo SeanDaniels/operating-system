@@ -55,15 +55,25 @@ process lock_routine_b(al_lock_t *l_a, al_lock_t *l_b) {
 }
 
 process main(void) {
-  pid32 pid1, pid2;
-  al_lock_t l_a, l_b;
+  pid32 pid1, pid2, pid3, pid4;
+  al_lock_t l_a, l_b, l_c, l_d;
   al_initlock(&l_a);
   al_initlock(&l_b);
-  pid1 = create((void *)lock_routine_a, INITSTK, 1, "lr_a", 2, &l_a, &l_b);
-  pid2 = create((void *)lock_routine_b, INITSTK, 1, "lr_b", 2, &l_a, &l_b);
+  al_initlock(&l_c);
+  al_initlock(&l_d);
+  pid1 = create((void *)lock_routine_a, INITSTK, 2, "lr_a", 2, &l_a, &l_b);
+  pid2 = create((void *)lock_routine_b, INITSTK, 2, "lr_b", 2, &l_a, &l_b);
+  pid3 = create((void *)lock_routine_a, INITSTK, 1, "lr_a", 2, &l_c, &l_d);
+  pid4 = create((void *)lock_routine_b, INITSTK, 1, "lr_a", 2, &l_c, &l_d);
   resume(pid1);
   sleepms(500);
   resume(pid2);
+  sleepms(500);
+  resume(pid3);
+  sleepms(500);
+  resume(pid4);
+  receive();
+  receive();
   receive();
   receive();
   sync_printf("\nDone\n");
