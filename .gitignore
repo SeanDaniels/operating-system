@@ -15,3 +15,4 @@ xinu/compile/xinu.map
 xinu/compile/.*
 xinu/temp/*
 xinu/compile/mini_out.txt
+xinu/compile/minicom_output.txt
