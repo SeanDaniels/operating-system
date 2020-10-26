@@ -20,6 +20,7 @@ local process startup(void); /* Process to finish startup tasks	*/
 struct procent proctab[NPROC]; /* Process table			*/
 struct sentry semtab[NSEM];    /* Semaphore table			*/
 struct memblk memlist;         /* List of free memory blocks		*/
+bool8 deadlock_chain[NPROC];
 
 // struct al_lock_t al_locktab[NALOCKS];
 /* Active system status */
@@ -169,6 +170,7 @@ static void sysinit() {
     prptr->prprio = 0;
     prptr->prlock = -1;
     prptr->park_flag = 0;
+    deadlock_chain[i] = FALSE;
   }
 
   /* Initialize the Null process entry */
