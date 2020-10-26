@@ -16,7 +16,7 @@
 #define PR_SUSP 5   /* Process is suspended			*/
 #define PR_WAIT 6   /* Process is on semaphore queue	*/
 #define PR_RECTIM 7 /* Process is receiving with timeout	*/
-
+#define NOTWAITING -1
 /* Miscellaneous process definitions */
 
 #define PNMLEN 16  /* Length of process "name"		*/
@@ -49,7 +49,7 @@ struct procent {       /* Entry in the process table		*/
   char prname[PNMLEN]; /* Process name				*/
   sid32 prsem;         /* Semaphore on which process waits	*/
   pid32 prparent;      /* ID of the creating process		*/
-  uint32 prlock;       /* lock on which the process waits */
+  int32 prlock;        /* lock on which the process waits */
   uint32
       park_flag; /* flag for parking the process, used in lock implementation */
   uint32 runtime;
