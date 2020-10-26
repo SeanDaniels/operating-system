@@ -42,6 +42,7 @@ pid32 create(void *funcaddr, /* Address of the function	*/
   prptr->prstklen = ssize;
   prptr->prname[PNMLEN - 1] = NULLCH;
   prptr->runtime = 0;
+  prptr->prlock = NOTWAITING;
   for (i = 0; i < PNMLEN - 1 && (prptr->prname[i] = name[i]) != NULLCH; i++)
     ;
   prptr->prsem = -1;
