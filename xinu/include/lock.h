@@ -5,7 +5,7 @@
 
 #define LOCKED 1
 #define UNLOCKED 0
-#define NOOWNER 0
+#define NOOWNER 500
 
 typedef struct {
   uint32 lock_value;
@@ -29,3 +29,8 @@ typedef struct {
 syscall setPark();
 syscall park();
 syscall unpark(pid32 thread);
+syscall al_park(al_lock_t *l);
+int32 get_owner(al_lock_t *l, pid32 rootProcess);
+bool8 al_try_lock(al_lock_t *l);
+void print_deadlock();
+extern bool8 deadlock_chain[NPROC];
