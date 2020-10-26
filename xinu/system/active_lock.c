@@ -1,9 +1,14 @@
 #include "../include/xinu.h"
-#define NOOWNER 200
+
 #define LOCK_DBG
 #define PARK_DBG
+
 al_lock_t *al_locktable[NALOCKS];
+
 pid32 rootProcess;
+
+uint32 rootLock;
+// Change process prlock entry to lock's number, not lock pointer
 
 syscall al_initlock(al_lock_t *l) {
   static uint32 al_locknumber = 0;
@@ -13,9 +18,10 @@ syscall al_initlock(al_lock_t *l) {
     l->flag = 0;
     l->guard = 0;
     l->owner = NOOWNER;
-    l->lock_number = al_locknumber++;
+    l->lock_number = al_locknumber;
     l->queue = newqueue();
     al_locktable[al_locknumber] = l;
+    al_locknumber++;
     restore(mask);
     return OK;
   }
@@ -26,21 +32,37 @@ syscall al_initlock(al_lock_t *l) {
 }
 
 syscall al_lock(al_lock_t *l) {
+  pid32 dep_check_result;
   int mask;
   while (test_and_set(&(l->guard), 1) == 1)
     ;
-  // no process holds lock
   mask = disable();
-  check_deadlock(l);
+#ifdef LOCK_DBG
+  kprintf("Circular dep check:\nprocess %d | lock %d\n", currpid,
+          l->lock_number);
+#endif
+  // returns the root process if there is a deadlock
+  dep_check_result = get_owner(l, currpid);
+  if (dep_check_result == currpid) {
+#ifdef LOCK_DBG
+    kprintf("Circular dep located\n");
+#endif
+  }
   restore(mask);
+  // no process holds lock
   if (l->flag == 0) {
     l->flag = 1;
-    l->guard = 0;
     l->owner = currpid;
+    l->guard = 0;
   }
   // some process already holds lock
   else {
     enqueue(currpid, l->queue);
+    mask = disable();
+    if (dep_check_result == currpid) {
+      print_deadlock();
+    }
+    restore(mask);
     setPark();
     l->guard = 0;
     al_park(l);
@@ -53,10 +75,10 @@ syscall al_unlock(al_lock_t *l) {
     ;
   if (isempty(l->queue)) {
     l->flag = 0;
-    l->owner = NOOWNER;
   } else {
     unpark(dequeue(l->queue));
   }
+  l->owner = NOOWNER;
   l->guard = 0;
   return OK;
 }
@@ -87,62 +109,61 @@ syscall al_unpark(pid32 thread) {
   mask = disable();
   struct procent *prptr = &proctab[thread];
   prptr->park_flag = 0;
-  prptr->prlock = -1;
+  prptr->prlock = NOTWAITING;
   ready(thread);
   restore(mask);
   return OK;
 }
 
-syscall has_lock(pid32 process) {
-  uint32 i;
-  al_lock_t *lockptr;
-#ifdef LOCK_DBG
-  kprintf("Checking if process %d owns any locks\n", process);
-#endif
-  for (i = 0; i < NALOCKS; i++) {
-    lockptr = al_locktable[i];
-    if (lockptr->owner == process) {
-#ifdef LOCK_DBG
-      kprintf("Process %d owns lock %d\n", process, lockptr->lock_number);
-#endif
-      has_client(lockptr->lock_number);
-    }
+int32 get_owner(al_lock_t *l, pid32 rootProcess) {
+  pid32 owner = l->owner;
+  int32 waiting_lock_number;
+  al_lock_t *next_lock;
+  int32 result;
+  if (owner == NOOWNER) {
+    return -1;
   }
-  return OK;
+  if (owner == rootProcess) {
+    // kprintf("Lock %d is owned by process %d\n", l->lock_number, rootProcess);
+    deadlock_chain[owner] = TRUE;
+    kprintf("%d --|owns|--> %d\n", owner, l->lock_number);
+    return rootProcess;
+  }
+  waiting_lock_number = proctab[owner].prlock;
+  if (waiting_lock_number == NOTWAITING) {
+    return -1;
+  }
+  next_lock = al_locktable[waiting_lock_number];
+  result = get_owner(next_lock, rootProcess);
+  if (result == rootProcess) {
+    deadlock_chain[owner] = TRUE;
+    kprintf("%d --|owns|--> %d --|waits|--> %d\n", owner, l->lock_number,
+            waiting_lock_number);
+    return rootProcess;
+  }
+  return -1;
 }
 
-syscall has_client(uint32 lockNumber) {
+bool8 al_trylock(al_lock_t *l) {
+  if (l->owner == NOOWNER) {
+    return TRUE;
+  }
+  return FALSE;
+}
+
+void print_deadlock() {
   uint32 i;
-  struct procent *prptr;
-#ifdef LOCK_DBG
-  kprintf("Checking if any processes are waiting on lock %d\n", lockNumber);
-#endif
   for (i = 0; i < NPROC; i++) {
-    prptr = &proctab[i];
-    if (prptr->prlock == lockNumber) {
-#ifdef LOCK_DBG
-      kprintf("Process %d is waiting on lock %d\n", i, lockNumber);
-#endif
-      if (i == rootProcess) {
-#ifdef LOCK_DBG
-        kprintf("Process %d is root process, circ. deb found\n", i);
-#endif
-        return OK;
-      }
-      has_lock(i);
+    if (deadlock_chain[i] == TRUE) {
+      kprintf("P%d->", i);
     }
   }
-  return OK;
+  kprintf("\n");
+  return;
 }
 
-syscall check_deadlock(al_lock_t *l) {
-  rootProcess = currpid;
-#ifdef LOCK_DBG
-  kprintf("**Beginning Deadlock Check for lock %d**\n", l->lock_number);
-#endif
-  has_lock(currpid);
-#ifdef LOCK_DBG
-  kprintf("**Deadlock Check Complete**\n");
-#endif
-  return OK;
+void inherit_priority() {
+  /*If process with priority x attempts to attain a lock that is owned by a
+   *process with priority y and x>y, the priority of process y is updated to
+   *match the priority of process x until process y releases the lock */
 }
