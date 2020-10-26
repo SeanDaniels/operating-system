@@ -1,6 +1,6 @@
 #include "../include/xinu.h"
 
-#define LOCK_DBG
+//#define LOCK_DBG
 #define PARK_DBG
 
 al_lock_t *al_locktable[NALOCKS];
@@ -33,7 +33,7 @@ syscall al_initlock(al_lock_t *l) {
 
 syscall al_lock(al_lock_t *l) {
   pid32 dep_check_result;
-  int mask;
+  int mask, dep = 0;
   while (test_and_set(&(l->guard), 1) == 1)
     ;
   mask = disable();
@@ -60,12 +60,12 @@ syscall al_lock(al_lock_t *l) {
     enqueue(currpid, l->queue);
     mask = disable();
     if (dep_check_result == currpid) {
-      print_deadlock();
+      dep = 1;
     }
     restore(mask);
     setPark();
     l->guard = 0;
-    al_park(l);
+    al_park(l, dep);
   }
   return OK;
 }
@@ -78,12 +78,13 @@ syscall al_unlock(al_lock_t *l) {
   } else {
     unpark(dequeue(l->queue));
   }
+  deadlock_chain[l->lock_number] = FALSE;
   l->owner = NOOWNER;
   l->guard = 0;
   return OK;
 }
 
-syscall al_park(al_lock_t *l) {
+syscall al_park(al_lock_t *l, int dep) {
   int mask;
   mask = disable();
   struct procent *prptr;
@@ -96,6 +97,8 @@ syscall al_park(al_lock_t *l) {
             prptr->prlock);
     kprintf("Lock %X is owned by process %d\n", l->lock_number, l->owner);
 #endif
+    if (dep)
+      print_deadlock();
     resched();
     prptr->park_flag = 0;
     restore(mask);
@@ -126,7 +129,9 @@ int32 get_owner(al_lock_t *l, pid32 rootProcess) {
   if (owner == rootProcess) {
     // kprintf("Lock %d is owned by process %d\n", l->lock_number, rootProcess);
     deadlock_chain[owner] = TRUE;
+#ifdef LOCK_DBG
     kprintf("%d --|owns|--> %d\n", owner, l->lock_number);
+#endif
     return rootProcess;
   }
   waiting_lock_number = proctab[owner].prlock;
@@ -137,8 +142,10 @@ int32 get_owner(al_lock_t *l, pid32 rootProcess) {
   result = get_owner(next_lock, rootProcess);
   if (result == rootProcess) {
     deadlock_chain[owner] = TRUE;
+#ifdef LOCK_DBG
     kprintf("%d --|owns|--> %d --|waits|--> %d\n", owner, l->lock_number,
             waiting_lock_number);
+#endif
     return rootProcess;
   }
   return -1;
@@ -153,17 +160,18 @@ bool8 al_trylock(al_lock_t *l) {
 
 void print_deadlock() {
   uint32 i;
+  uint32 first = 1;
+  kprintf("lock_detected<");
   for (i = 0; i < NPROC; i++) {
     if (deadlock_chain[i] == TRUE) {
-      kprintf("P%d->", i);
+      deadlock_chain[i] = FALSE;
+      if (first) {
+        kprintf("P%d", i);
+        first = 0;
+      } else
+        kprintf("-P%d", i);
     }
   }
-  kprintf("\n");
+  kprintf(">\n");
   return;
-}
-
-void inherit_priority() {
-  /*If process with priority x attempts to attain a lock that is owned by a
-   *process with priority y and x>y, the priority of process y is updated to
-   *match the priority of process x until process y releases the lock */
 }
