@@ -1,7 +1,7 @@
 #include "../include/xinu.h"
 
 //#define LOCK_DBG
-#define PARK_DBG
+//#define PARK_DBG
 
 al_lock_t *al_locktable[NALOCKS];
 
@@ -43,11 +43,11 @@ syscall al_lock(al_lock_t *l) {
 #endif
   // returns the root process if there is a deadlock
   dep_check_result = get_owner(l, currpid);
-  if (dep_check_result == currpid) {
 #ifdef LOCK_DBG
+  if (dep_check_result == currpid) {
     kprintf("Circular dep located\n");
-#endif
   }
+#endif
   restore(mask);
   // no process holds lock
   if (l->flag == 0) {
@@ -153,6 +153,7 @@ int32 get_owner(al_lock_t *l, pid32 rootProcess) {
 
 bool8 al_trylock(al_lock_t *l) {
   if (l->owner == NOOWNER) {
+    al_lock(l);
     return TRUE;
   }
   return FALSE;
