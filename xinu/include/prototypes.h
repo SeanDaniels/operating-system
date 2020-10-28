@@ -622,6 +622,10 @@ extern void sync_printf(char *fmt, ...);
 
 extern uint32 get_timestamp(void);
 
+/* in file timed_execution.c */
+extern void run_for_ms(uint32);
+/* in file sync_printf.c */
+extern void sync_printf(char *, ...);
 /* NETWORK BYTE ORDER CONVERSION NOT NEEDED ON A BIG-ENDIAN COMPUTER */
 #define htons(x) ((0xff & ((x) >> 8)) | ((0xff & (x)) << 8))
 #define htonl(x)                                                               \
