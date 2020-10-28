@@ -54,7 +54,7 @@ extern bool8 deadlock_chain[NPROC];
 syscall pi_initlock(pi_lock_t *l);
 syscall pi_lock(pi_lock_t *l);
 syscall pi_unlock(pi_lock_t *l);
-syscall pi_park(pi_lock_t *l, bool8 prio);
+syscall pi_park(pi_lock_t *l);
 syscall pi_unpark(pid32 thread);
 void print_priority_shift();
 bool8 check_priority(pi_lock_t *l, pid32 currpid);
