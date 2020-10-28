@@ -7,6 +7,7 @@ struct defer Defer;
 uint32 get_timestamp() { return ctr1000; }
 //#define RESCHED_CNTL_DBG
 //#define RECEIVE_DBG
+#define LOW_PRIO_DBG
 
 /*------------------------------------------------------------------------
  *  resched  -  Reschedule processor to highest priority eligible process
@@ -36,8 +37,14 @@ void resched(void) /* Assumes interrupts are disabled	*/
     }
 
     /* Old process will no longer remain current */
+
     ptold->runtime += ctr1000 - ptold->run_start;
     ptold->prstate = PR_READY;
+#ifdef LOW_PRIO_DBG
+    if (currpid == 6) {
+      kprintf("Low priority:\nProcess priority: %d\n", ptold->prprio);
+    }
+#endif
     insert(currpid, readylist, ptold->prprio);
   }
 
