@@ -1,4 +1,7 @@
 #include "../include/xinu.h"
+#define LOCK_DBG
+#define FIX_PRIORITY
+
 pi_lock_t *pi_locktable[NPILOCKS];
 
 syscall pi_initlock(pi_lock_t *l) {
@@ -10,6 +13,7 @@ syscall pi_initlock(pi_lock_t *l) {
     l->guard = 0;
     l->owner = NOOWNER;
     l->lock_number = pi_locknumber;
+    l->inherited_priority = FALSE;
     l->queue = newqueue();
     pi_locktable[pi_locknumber] = l;
     pi_locknumber++;
@@ -39,11 +43,13 @@ syscall pi_lock(pi_lock_t *l) {
   else {
     enqueue(currpid, l->queue);
     mask = disable();
+#ifdef FIX_PRIORITY
     prio = check_priority(l, currpid);
+#endif
     restore(mask);
     setPark();
     l->guard = 0;
-    pi_park(l, prio);
+    pi_park(l);
   }
   return OK;
 }
@@ -55,14 +61,16 @@ syscall pi_unlock(pi_lock_t *l) {
     l->flag = 0;
   } else {
     unpark(dequeue(l->queue));
+#ifdef FIX_PRIORITY
     revert_priority(l);
+#endif
   }
   l->owner = NOOWNER;
   l->guard = 0;
   return OK;
 }
 
-syscall pi_park(pi_lock_t *l, bool8 prio) {
+syscall pi_park(pi_lock_t *l) {
   int mask;
   mask = disable();
   struct procent *prptr;
@@ -75,9 +83,10 @@ syscall pi_park(pi_lock_t *l, bool8 prio) {
             prptr->prlock);
     kprintf("Lock %X is owned by process %d\n", l->lock_number, l->owner);
 #endif
-    if (prio) {
+    if (l->inherited_priority && (l->owner != NOOWNER)) {
 #ifdef LOCK_DBG
-      kprintf("Print priority shift here\n");
+      kprintf("priority_update(P%d)<%d->%d>\n", l->owner, l->og_priority,
+              proctab[l->owner].prprio);
 #endif
       // print_priority_shift();
     }
@@ -100,30 +109,25 @@ syscall pi_unpark(pid32 thread) {
   return OK;
 }
 
-/* void print_priority_shift() { */
-/*   uint32 i; */
-/*   uint32 first = 1; */
-/*   kprintf("lock_detected<"); */
-/*   for (i = 0; i < NPROC; i++) { */
-/*     if (deadlock_chain[i] == TRUE) { */
-/*       deadlock_chain[i] = FALSE; */
-/*       if (first) { */
-/*         kprintf("P%d", i); */
-/*         first = 0; */
-/*       } else */
-/*         kprintf("-P%d", i); */
-/*     } */
-/*   } */
-/*   kprintf(">\n"); */
-/*   return; */
-/* } */
-
 bool8 check_priority(pi_lock_t *l, pid32 currpid) {
   struct procent *waiting_prptr = &proctab[currpid];
   struct procent *current_prptr = &proctab[l->owner];
+  if (l->owner == NOOWNER)
+    return FALSE;
   if (waiting_prptr->prprio > current_prptr->prprio) {
+#ifdef LOCK_DBG
+    kprintf("Prioriy of process %d (owns lock %d) is < Pririty of process %d "
+            "(waiting on lock %d)\n",
+            l->owner, l->lock_number, currpid, l->lock_number);
+#endif
     l->inherited_priority = TRUE;
     current_prptr->prprio = waiting_prptr->prprio;
+    getitem(l->owner);
+    insert(l->owner, readylist, current_prptr->prprio);
+#ifdef LOCK_DBG
+    kprintf("Changing priority of process %d to %d\n", l->owner,
+            waiting_prptr->prprio);
+#endif
     return TRUE;
   }
   return FALSE;
@@ -133,9 +137,10 @@ void revert_priority(pi_lock_t *l) {
   int mask;
   mask = disable();
   struct procent *owner;
-  if (l->inherited_priority) {
+  if (l->inherited_priority && (l->owner != NOOWNER)) {
     owner = &proctab[l->owner];
     owner->prprio = l->og_priority;
+    kprintf("reverting_priority(P%d)<%d>\n", l->owner, owner->prprio);
   }
   restore(mask);
   return;
