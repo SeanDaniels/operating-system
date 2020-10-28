@@ -3,19 +3,6 @@
 //#define DBG
 #define DEADLOCK
 //#define TRYLOCK
-void sync_printf(char *fmt, ...) {
-  intmask mask = disable();
-  void *arg = __builtin_apply_args();
-  __builtin_apply((void *)kprintf, arg, 100);
-  restore(mask);
-}
-
-void run_for_ms(uint32 time) {
-  uint32 start = proctab[currpid].runtime;
-  while (proctab[currpid].runtime - start < time)
-    ;
-}
-/* pass shared variable, lock */
 
 process lock_routine_a(al_lock_t *l_a, al_lock_t *l_b) {
   uint32 i;
@@ -95,41 +82,47 @@ process lock_routine_d(al_lock_t *l_a, al_lock_t *l_b) {
   return OK;
 }
 
-process main(void) {
-  pid32 pid1, pid2;
-  al_lock_t l_a, l_b;
-  al_initlock(&l_a);
-  al_initlock(&l_b);
-#ifdef DEADLOCK
-  pid32 pid3, pid4;
-  al_lock_t l_c, l_d;
-  al_initlock(&l_c);
-  al_initlock(&l_d);
-  pid1 = create((void *)lock_routine_a, INITSTK, 2, "lr_a", 2, &l_a, &l_b);
-  pid2 = create((void *)lock_routine_b, INITSTK, 2, "lr_b", 2, &l_a, &l_b);
-  pid3 = create((void *)lock_routine_a, INITSTK, 1, "lr_a", 2, &l_c, &l_d);
-  pid4 = create((void *)lock_routine_b, INITSTK, 1, "lr_a", 2, &l_c, &l_d);
-  resume(pid1);
-  sleepms(500);
-  resume(pid2);
-  sleepms(500);
-  resume(pid3);
-  sleepms(500);
-  resume(pid4);
-  receive();
-  receive();
-  receive();
-  receive();
-#endif
-#ifdef TRYLOCK
-  pid1 = create((void *)lock_routine_c, INITSTK, 2, "lr_c", 2, &l_a, &l_b);
-  pid2 = create((void *)lock_routine_d, INITSTK, 2, "lr_d", 2, &l_a, &l_b);
-  resume(pid1);
-  sleepms(500);
-  resume(pid2);
-  receive();
-  receive();
-#endif
-  sync_printf("\nDone\n");
-  return OK;
-}
+/* process main(void) { */
+/*   pid32 pid1, pid2; */
+/*   al_lock_t l_a, l_b; */
+/*   al_initlock(&l_a); */
+/*   al_initlock(&l_b); */
+/* #ifdef DEADLOCK */
+/*   pid32 pid3, pid4; */
+/*   al_lock_t l_c, l_d; */
+/*   al_initlock(&l_c); */
+/*   al_initlock(&l_d); */
+/*   pid1 = create((void *)lock_routine_a, INITSTK, 2, "lr_a", 2, &l_a, &l_b);
+ */
+/*   pid2 = create((void *)lock_routine_b, INITSTK, 2, "lr_b", 2, &l_a, &l_b);
+ */
+/*   pid3 = create((void *)lock_routine_a, INITSTK, 1, "lr_a", 2, &l_c, &l_d);
+ */
+/*   pid4 = create((void *)lock_routine_b, INITSTK, 1, "lr_a", 2, &l_c, &l_d);
+ */
+/*   resume(pid1); */
+/*   sleepms(500); */
+/*   resume(pid2); */
+/*   sleepms(500); */
+/*   resume(pid3); */
+/*   sleepms(500); */
+/*   resume(pid4); */
+/*   receive(); */
+/*   receive(); */
+/*   receive(); */
+/*   receive(); */
+/* #endif */
+/* #ifdef TRYLOCK */
+/*   pid1 = create((void *)lock_routine_c, INITSTK, 2, "lr_c", 2, &l_a, &l_b);
+ */
+/*   pid2 = create((void *)lock_routine_d, INITSTK, 2, "lr_d", 2, &l_a, &l_b);
+ */
+/*   resume(pid1); */
+/*   sleepms(500); */
+/*   resume(pid2); */
+/*   receive(); */
+/*   receive(); */
+/* #endif */
+/*   sync_printf("\nDone\n"); */
+/*   return OK; */
+/* } */
