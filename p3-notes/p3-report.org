@@ -1,4 +1,6 @@
 #+TITLE: P3 Report
+#+AUTHOR:    Sean Daniels
+#+OPTIONS: toc:nil
 * Brief description of implementation of deadlock detection and priority inversion avoidance
 ** Deadlock Detection
 A deadlock occurs when there is a circular dependency between two locks and two processes. The clearest way to illustrate a deadlock is with the following example:
@@ -13,6 +15,6 @@ There is a scenario that produces priority inversion, which is when a process im
 When a process is unparked, the bool value indicating the presence of a priority shift is checked. If the bool evaluates true, the original process priority is copied to the process that is releasing the lock.
 * Brief description of test cases
 ** Deadlock Detection
-In order to test for deadlocks, I updated main to contain a two seperate processes that competed for two locks. The first process, process_a, locks lock_a, locks lock_b, unlocks lock_a, and then unlocks lock_b. The second process, process_b, attempts to complete the inverse lock aquisition/release routine. What happens is that process_a locks lock_a, and process_b locks lock_b. When process_a attempts to lock lock_b, it can't, because lock_b is held by process_b. Because process_a is stalled waiting on lock_b, it doesn't release lock_a. The same thing happens for process_b relative to lock_a. This is a cyclic dependency, and it verifies the printing of the deadlock depenedencies.
+In order to test for deadlocks, I updated main to contain a two seperate processes that competed for two locks. The first process, process_a, locks lock_a, locks lock_b, unlocks lock_a, and then unlocks lock_b. The second process, process_b, attempts to complete the inverse lock aquisition/release routine. What happens is that process_a locks lock_a, and process_b locks lock_b. When process_a attempts to lock lock_b, it can't, because lock_b is held by process_b. Because process_a is stalled waiting on lock_b, it doesn't release lock_a. The same thing happens for process_b relative to lock_a. This is a cyclic dependency, and it verifies the printing of the deadlock depenedencies. The outcome of the deadlock testcase was what I expected.
 ** Priority Inversion Avoidance
-In order to test for prioity inversion avoidance, I created three processes. The first process is a low priority process that locks lock_a. The second process is a medium priority process that spawns 10 processes that run for one second each. The third process is a high priority process that attempts to lock lock_a. 
+In order to test for prioity inversion avoidance, I created three processes. The first process is a low priority process that locks lock_a. The second process is a medium priority process that spawns 10 processes that run for one second each. The third process is a high priority process that attempts to lock lock_a. The outcome of the priority inversion avoidance testcase is what I expected.
