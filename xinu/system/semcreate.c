@@ -1,6 +1,6 @@
 /* semcreate.c - semcreate, newsem */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 local	sid32	newsem(void);
 

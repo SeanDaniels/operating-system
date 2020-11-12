@@ -1,8 +1,7 @@
 /* kill.c - kill */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
-//#define LOCK_DBG
 /*------------------------------------------------------------------------
  *  kill  -  Kill a process and remove it from the system
  *------------------------------------------------------------------------
@@ -25,16 +24,8 @@ syscall	kill(
 	if (--prcount <= 1) {		/* Last user process completes	*/
 		xdone();
 	}
-#ifdef LOCK_DBG
-	kprintf("Trying to kill process 0\n");
-	kprintf("Process 0's state is %d\n", prptr->prstate);
-#endif
 
-	/*  let parent process know that child process has finished */
-	/*  Process is done, ready to be terminated
-	 * call the send function, passing this processes parent's id */
 	send(prptr->prparent, pid);
-
 	for (i=0; i<3; i++) {
 		close(prptr->prdesc[i]);
 	}
@@ -47,9 +38,6 @@ syscall	kill(
 
 	case PR_SLEEP:
 	case PR_RECTIM:
-		#ifdef LOCK_DBG
-		kprintf("Trying to kill timed out/sleeping process %d\n", pid);
-		#endif
 		unsleep(pid);
 		prptr->prstate = PR_FREE;
 		break;

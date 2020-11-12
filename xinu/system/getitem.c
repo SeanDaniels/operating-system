@@ -1,6 +1,6 @@
 /* getitem.c - getfirst, getlast, getitem */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 /*------------------------------------------------------------------------
  *  getfirst  -  Remove a process from the front of a queue

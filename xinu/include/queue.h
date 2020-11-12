@@ -3,9 +3,9 @@
 /* Queue structure declarations, constants, and inline functions	*/
 
 /* Default # of queue entries: 1 per process plus 2 for ready list plus	*/
-/*			2 for sleep list plus 2 per semaphore + 1 per number of locks	*/
+/*			2 for sleep list plus 2 per semaphore		*/
 #ifndef NQENT
-#define NQENT	(NPROC + 4 + NSEM + NSEM + NLOCKS)
+#define NQENT	(NPROC + 4 + NSEM + NSEM)
 #endif
 
 #define	EMPTY	(-1)		/* Null value for qnext or qprev index	*/

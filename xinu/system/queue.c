@@ -1,6 +1,6 @@
 /* queue.c - enqueue, dequeue */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 
 struct qentry	queuetab[NQENT];	/* Table of process queues	*/
 
@@ -49,21 +49,4 @@ pid32	dequeue(
 	queuetab[pid].qprev = EMPTY;
 	queuetab[pid].qnext = EMPTY;
 	return pid;
-}
-void print_q(qid16 q){
-	pid32 pid;
-	pid32 key;
-	if (isbadqid(q)) {
-		kprintf("Bad qid\n");
-		return;
-	} else if (isempty(q)) {
-		kprintf("Empty q\n");
-		return;
-	}
-	pid = firstid(q);
-	while(queuetab[pid].qnext!=EMPTY){
-		kprintf("Queue PID: %d\n", pid);
-		pid = queuetab[pid].qnext;
-	}
-	return;
 }

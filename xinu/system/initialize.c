@@ -2,35 +2,33 @@
 
 /* Handle system initialization and become the null process */
 
-#include "../include/xinu.h"
+#include <xinu.h>
 #include <string.h>
 
-extern void start(void); /* Start of Xinu code			*/
-extern void *_end;       /* End of Xinu code			*/
+extern	void	start(void);	/* Start of Xinu code			*/
+extern	void	*_end;		/* End of Xinu code			*/
 
 /* Function prototypes */
 
-extern void main(void);      /* Main is the first process created	*/
-static void sysinit();       /* Internal system initialization	*/
-extern void meminit(void);   /* Initializes the free memory list	*/
-local process startup(void); /* Process to finish startup tasks	*/
+extern	void main(void);	/* Main is the first process created	*/
+static	void sysinit(); 	/* Internal system initialization	*/
+extern	void meminit(void);	/* Initializes the free memory list	*/
+local	process startup(void);	/* Process to finish startup tasks	*/
 
 /* Declarations of major kernel variables */
 
-struct procent proctab[NPROC]; /* Process table			*/
-struct sentry semtab[NSEM];    /* Semaphore table			*/
-struct memblk memlist;         /* List of free memory blocks		*/
-bool8 deadlock_chain[NPROC];
+struct	procent	proctab[NPROC];	/* Process table			*/
+struct	sentry	semtab[NSEM];	/* Semaphore table			*/
+struct	memblk	memlist;	/* List of free memory blocks		*/
 
-// struct al_lock_t al_locktab[NALOCKS];
 /* Active system status */
 
-int prcount;   /* Total number of live processes	*/
-pid32 currpid; /* ID of currently executing process	*/
+int	prcount;		/* Total number of live processes	*/
+pid32	currpid;		/* ID of currently executing process	*/
 
 /* Control sequence to reset the console colors and cusor positiion	*/
 
-#define CONSOLE_RESET " \033[0m\033[2J\033[;H"
+#define	CONSOLE_RESET	" \033[0m\033[2J\033[;H"
 
 /*------------------------------------------------------------------------
  * nulluser - initialize the system and become the null process
@@ -46,51 +44,58 @@ pid32 currpid; /* ID of currently executing process	*/
  *------------------------------------------------------------------------
  */
 
-void nulluser() {
-  struct memblk *memptr; /* Ptr to memory block		*/
-  uint32 free_mem;       /* Total amount of free memory	*/
+void	nulluser()
+{	
+	struct	memblk	*memptr;	/* Ptr to memory block		*/
+	uint32	free_mem;		/* Total amount of free memory	*/
+	
+	/* Initialize the system */
 
-  /* Initialize the system */
+	sysinit();
 
-  sysinit();
+	/* Output Xinu memory layout */
+	free_mem = 0;
+	for (memptr = memlist.mnext; memptr != NULL;
+						memptr = memptr->mnext) {
+		free_mem += memptr->mlength;
+	}
+	kprintf("%10d bytes of free memory.  Free list:\n", free_mem);
+	for (memptr=memlist.mnext; memptr!=NULL;memptr = memptr->mnext) {
+	    kprintf("           [0x%08X to 0x%08X]\n",
+		(uint32)memptr, ((uint32)memptr) + memptr->mlength - 1);
+	}
 
-  /* Output Xinu memory layout */
-  free_mem = 0;
-  for (memptr = memlist.mnext; memptr != NULL; memptr = memptr->mnext) {
-    free_mem += memptr->mlength;
-  }
-  kprintf("%10d bytes of free memory.  Free list:\n", free_mem);
-  for (memptr = memlist.mnext; memptr != NULL; memptr = memptr->mnext) {
-    kprintf("           [0x%08X to 0x%08X]\n", (uint32)memptr,
-            ((uint32)memptr) + memptr->mlength - 1);
-  }
+	kprintf("%10d bytes of Xinu code.\n",
+		(uint32)&etext - (uint32)&text);
+	kprintf("           [0x%08X to 0x%08X]\n",
+		(uint32)&text, (uint32)&etext - 1);
+	kprintf("%10d bytes of data.\n",
+		(uint32)&ebss - (uint32)&data);
+	kprintf("           [0x%08X to 0x%08X]\n\n",
+		(uint32)&data, (uint32)&ebss - 1);
 
-  kprintf("%10d bytes of Xinu code.\n", (uint32)&etext - (uint32)&text);
-  kprintf("           [0x%08X to 0x%08X]\n", (uint32)&text, (uint32)&etext - 1);
-  kprintf("%10d bytes of data.\n", (uint32)&ebss - (uint32)&data);
-  kprintf("           [0x%08X to 0x%08X]\n\n", (uint32)&data,
-          (uint32)&ebss - 1);
+	/* Enable interrupts */
 
-  /* Enable interrupts */
+	enable();
 
-  enable();
+	/* Initialize the network stack and start processes */
 
-  /* Initialize the network stack and start processes */
+	net_init();
 
-  net_init();
+	/* Create a process to finish startup and start main */
 
-  /* Create a process to finish startup and start main */
+	resume(create((void *)startup, INITSTK, INITPRIO,
+					"Startup process", 0, NULL));
 
-  resume(
-      create((void *)startup, INITSTK, INITPRIO, "Startup process", 0, NULL));
+	/* Become the Null process (i.e., guarantee that the CPU has	*/
+	/*  something to run when no other process is ready to execute)	*/
 
-  /* Become the Null process (i.e., guarantee that the CPU has	*/
-  /*  something to run when no other process is ready to execute)	*/
+	while (TRUE) {
+		;		/* Do nothing */
+	}
 
-  while (TRUE) {
-    ; /* Do nothing */
-  }
 }
+
 
 /*------------------------------------------------------------------------
  *
@@ -99,32 +104,38 @@ void nulluser() {
  *
  *------------------------------------------------------------------------
  */
-local process startup(void) {
-  uint32 ipaddr; /* Computer's IP address	*/
-  char str[128]; /* String used to format output	*/
+local process	startup(void)
+{
+	uint32	ipaddr;			/* Computer's IP address	*/
+	char	str[128];		/* String used to format output	*/
 
-  /* Use DHCP to obtain an IP address and format it */
 
-  ipaddr = getlocalip();
-  if ((int32)ipaddr == SYSERR) {
-    kprintf("Cannot obtain an IP address\n");
-  } else {
-    /* Print the IP in dotted decimal and hex */
-    ipaddr = NetData.ipucast;
-    sprintf(str, "%d.%d.%d.%d", (ipaddr >> 24) & 0xff, (ipaddr >> 16) & 0xff,
-            (ipaddr >> 8) & 0xff, ipaddr & 0xff);
+	/* Use DHCP to obtain an IP address and format it */
 
-    kprintf("Obtained IP address  %s   (0x%08x)\n", str, ipaddr);
-  }
+	ipaddr = getlocalip();
+	if ((int32)ipaddr == SYSERR) {
+		kprintf("Cannot obtain an IP address\n");
+	} else {
+		/* Print the IP in dotted decimal and hex */
+		ipaddr = NetData.ipucast;
+		sprintf(str, "%d.%d.%d.%d",
+			(ipaddr>>24)&0xff, (ipaddr>>16)&0xff,
+			(ipaddr>>8)&0xff,        ipaddr&0xff);
+	
+		kprintf("Obtained IP address  %s   (0x%08x)\n", str,
+								ipaddr);
+	}
 
-  /* Create a process to execute function main() */
+	/* Create a process to execute function main() */
 
-  resume(create((void *)main, INITSTK, INITPRIO, "Main process", 0, NULL));
+	resume(create((void *)main, INITSTK, INITPRIO,
+					"Main process", 0, NULL));
 
-  /* Startup process exits at this point */
+	/* Startup process exits at this point */
 
-  return OK;
+	return OK;
 }
+
 
 /*------------------------------------------------------------------------
  *
@@ -132,98 +143,98 @@ local process startup(void) {
  *
  *------------------------------------------------------------------------
  */
-static void sysinit() {
-  int32 i;
-  struct procent *prptr; /* Ptr to process table entry	*/
-  struct sentry *semptr; /* Ptr to semaphore table entry	*/
+static	void	sysinit()
+{
+	int32	i;
+	struct	procent	*prptr;		/* Ptr to process table entry	*/
+	struct	sentry	*semptr;	/* Ptr to semaphore table entry	*/
 
-  /* Reset the console */
+	/* Reset the console */
 
-  kprintf(CONSOLE_RESET);
-  kprintf("\n%s\n\n", VERSION);
+	kprintf(CONSOLE_RESET);
+	kprintf("\n%s\n\n", VERSION);
 
-  /* Initialize the interrupt vectors */
+	/* Initialize the interrupt vectors */
 
-  initevec();
+	initevec();
+	
+	/* Initialize free memory list */
+	
+	meminit();
 
-  /* Initialize free memory list */
+	/* Initialize system variables */
 
-  meminit();
+	/* Count the Null process as the first process in the system */
 
-  /* Initialize system variables */
+	prcount = 1;
 
-  /* Count the Null process as the first process in the system */
+	/* Scheduling is not currently blocked */
 
-  prcount = 1;
+	Defer.ndefers = 0;
 
-  /* Scheduling is not currently blocked */
+	/* Initialize process table entries free */
 
-  Defer.ndefers = 0;
+	for (i = 0; i < NPROC; i++) {
+		prptr = &proctab[i];
+		prptr->prstate = PR_FREE;
+		prptr->prname[0] = NULLCH;
+		prptr->prstkbase = NULL;
+		prptr->prprio = 0;
+	}
 
-  /* Initialize process table entries free */
+	/* Initialize the Null process entry */	
 
-  for (i = 0; i < NPROC; i++) {
-    prptr = &proctab[i];
-    prptr->prstate = PR_FREE;
-    prptr->prname[0] = NULLCH;
-    prptr->prstkbase = NULL;
-    prptr->prprio = 0;
-    prptr->prlock = -1;
-    prptr->park_flag = 0;
-    deadlock_chain[i] = FALSE;
-  }
+	prptr = &proctab[NULLPROC];
+	prptr->prstate = PR_CURR;
+	prptr->prprio = 0;
+	strncpy(prptr->prname, "prnull", 7);
+	prptr->prstkbase = getstk(NULLSTK);
+	prptr->prstklen = NULLSTK;
+	prptr->prstkptr = 0;
+	currpid = NULLPROC;
+	
+	/* Initialize semaphores */
 
-  /* Initialize the Null process entry */
+	for (i = 0; i < NSEM; i++) {
+		semptr = &semtab[i];
+		semptr->sstate = S_FREE;
+		semptr->scount = 0;
+		semptr->squeue = newqueue();
+	}
 
-  prptr = &proctab[NULLPROC];
-  prptr->prstate = PR_CURR;
-  prptr->prlock = -1;
-  prptr->prprio = 0;
-  strncpy(prptr->prname, "prnull", 7);
-  prptr->prstkbase = getstk(NULLSTK);
-  prptr->prstklen = NULLSTK;
-  prptr->prstkptr = 0;
-  currpid = NULLPROC;
+	/* Initialize buffer pools */
 
-  /* Initialize semaphores */
+	bufinit();
 
-  for (i = 0; i < NSEM; i++) {
-    semptr = &semtab[i];
-    semptr->sstate = S_FREE;
-    semptr->scount = 0;
-    semptr->squeue = newqueue();
-  }
+	/* Create a ready list for processes */
 
-  /* Initialize buffer pools */
+	readylist = newqueue();
 
-  bufinit();
 
-  /* Create a ready list for processes */
+	/* initialize the PCI bus */
 
-  readylist = newqueue();
+	pci_init();
 
-  /* initialize the PCI bus */
+	/* Initialize the real time clock */
 
-  pci_init();
+	clkinit();
 
-  /* Initialize the real time clock */
-
-  clkinit();
-
-  for (i = 0; i < NDEVS; i++) {
-    init(i);
-  }
-  return;
+	for (i = 0; i < NDEVS; i++) {
+		init(i);
+	}
+	return;
 }
 
-int32 stop(char *s) {
-  kprintf("%s\n", s);
-  kprintf("looping... press reset\n");
-  while (1)
-    /* Empty */;
+int32	stop(char *s)
+{
+	kprintf("%s\n", s);
+	kprintf("looping... press reset\n");
+	while(1)
+		/* Empty */;
 }
 
-int32 delay(int n) {
-  DELAY(n);
-  return OK;
+int32	delay(int n)
+{
+	DELAY(n);
+	return OK;
 }
