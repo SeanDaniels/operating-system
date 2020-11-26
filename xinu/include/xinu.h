@@ -41,3 +41,5 @@
 #include <multiboot.h>
 #include <stdio.h>
 #include <string.h>
+#include <paging.h>
+#include <vmalloc.h>

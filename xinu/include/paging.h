@@ -7,7 +7,11 @@
 #define PAGE_SIZE       4096    /* number of bytes per page                              */
 #define MAX_FFS_SIZE    16*1024 /* size of FFS space  (in frames)                        */
 #define MAX_PT_SIZE     1024    /* size of space used for page tables (in frames)        */
-
+#define PTE_PER_PAGE (PAGE_SIZE / 4)
+#define V_HEAP_PD_START (XINU_PAGES / PTE_PER_PAGE)
+#define START 0
+#define PT_START (XINU_PAGES*PAGE_SIZE)
+#define FFS_START (PT_START + MAX_PT_SIZE*PAGE_SIZE)
 
 /* Structure for a page directory entry */
 
@@ -21,9 +25,11 @@ typedef struct {
   unsigned int pd_acc	: 1;		/* page table was accessed?	*/
   unsigned int pd_mbz	: 1;		/* must be zero			*/
   unsigned int pd_fmb	: 1;		/* four MB pages?		*/
-  unsigned int pd_global: 1;		/* global (ignored)		*/
-  unsigned int pd_avail : 3;		/* for programmer's use		*/
-  unsigned int pd_base	: 20;		/* location of page table?	*/
+  unsigned int pd_global : 1;           /* global (ignored)		*/
+  unsigned int pd_valid : 1;            /* for programmer's use		10*/
+  unsigned int pd_alloc : 1;            /* for programmer's use		11*/
+  unsigned int pd_avail : 1;            /* for programmer's use		12*/
+  unsigned int pd_base : 20;            /* location of page table?	*/
 } pd_t;
 
 /* Structure for a page table entry */
@@ -39,7 +45,9 @@ typedef struct {
   unsigned int pt_dirty : 1;		/* page was written?		*/
   unsigned int pt_mbz	: 1;		/* must be zero			*/
   unsigned int pt_global: 1;		/* should be zero in 586	*/
-  unsigned int pt_avail : 3;		/* for programmer's use		*/
+  unsigned int pt_valid : 1;            /* for programmer's use		10*/
+  unsigned int pt_alloc : 1;            /* for programmer's use		11*/
+  unsigned int pt_avail : 1;            /* for programmer's use		12*/
   unsigned int pt_base	: 20;		/* location of page?		*/
 } pt_t;
 
@@ -76,4 +84,9 @@ void write_cr4(unsigned long n);
 
 void enable_paging();
 
+void clear_page(char* address);
+
+char* initialize_user_pd( pid32 pid);
+
+void print_page_dir(char* address, pid32 pid);
 #endif

@@ -1,6 +1,7 @@
 /* resched.c - resched, resched_cntl */
 
-#include <xinu.h>
+#include "../include/xinu.h"
+//#define DBG
 
 struct	defer	Defer;
 
@@ -36,14 +37,28 @@ void	resched(void)		/* Assumes interrupts are disabled	*/
 	}
 
 	/* Force context switch to highest priority ready process */
-
 	currpid = dequeue(readylist);
 	ptnew = &proctab[currpid];
 	ptnew->prstate = PR_CURR;
 	preempt = QUANTUM;		/* Reset time slice for process	*/
-	ctxsw(&ptold->prstkptr, &ptnew->prstkptr);
+	if(!(ptold->user_process)&&!(ptnew->user_process)){
+#ifdef DBG
+		kprintf("Switching between two system processes\n");
+		kprintf("No PDBR change\n");
+#endif
+	}
+	else{
+	#ifdef DBG
+		kprintf("Switching between system/user or user/user processes\n");
+		kprintf("PDBR change\n");
+		kprintf("Switching to process %d, Old PDBR was 0x%08X, New PDBR is 0x%08X\n", currpid, ptold->pdbr,
+				ptnew->pdbr);
+	#endif
+		write_cr3(ptnew->pdbr);
+	}
+        ctxsw(&ptold->prstkptr, &ptnew->prstkptr);
 
-	/* Old process returns here when resumed */
+        /* Old process returns here when resumed */
 
 	return;
 }

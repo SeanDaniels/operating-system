@@ -1,7 +1,9 @@
 /*  main.c  - main */
 
 #include <xinu.h>
+//#define USING
 
+#ifdef USING
 process	main(void)
 {
 	/* Run the Xinu shell */
@@ -20,3 +22,4 @@ process	main(void)
 	return OK;
     
 }
+#endif

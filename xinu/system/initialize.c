@@ -17,9 +17,9 @@ local	process startup(void);	/* Process to finish startup tasks	*/
 
 /* Declarations of major kernel variables */
 
-struct	procent	proctab[NPROC];	/* Process table			*/
-struct	sentry	semtab[NSEM];	/* Semaphore table			*/
-struct	memblk	memlist;	/* List of free memory blocks		*/
+struct procent proctab[NPROC]; /* Process table			*/
+struct sentry semtab[NSEM];    /* Semaphore table			*/
+struct memblk memlist, ffslist, ptlist;         /* List of free memory blocks		*/
 
 /* Active system status */
 
@@ -44,58 +44,53 @@ pid32	currpid;		/* ID of currently executing process	*/
  *------------------------------------------------------------------------
  */
 
-void	nulluser()
-{	
-	struct	memblk	*memptr;	/* Ptr to memory block		*/
-	uint32	free_mem;		/* Total amount of free memory	*/
-	
-	/* Initialize the system */
+void nulluser() {
+  struct memblk *memptr; /* Ptr to memory block		*/
+  uint32 free_mem;       /* Total amount of free memory	*/
 
-	sysinit();
+  /* Initialize the system */
 
-	/* Output Xinu memory layout */
-	free_mem = 0;
-	for (memptr = memlist.mnext; memptr != NULL;
-						memptr = memptr->mnext) {
-		free_mem += memptr->mlength;
-	}
-	kprintf("%10d bytes of free memory.  Free list:\n", free_mem);
-	for (memptr=memlist.mnext; memptr!=NULL;memptr = memptr->mnext) {
-	    kprintf("           [0x%08X to 0x%08X]\n",
-		(uint32)memptr, ((uint32)memptr) + memptr->mlength - 1);
-	}
+  sysinit();
 
-	kprintf("%10d bytes of Xinu code.\n",
-		(uint32)&etext - (uint32)&text);
-	kprintf("           [0x%08X to 0x%08X]\n",
-		(uint32)&text, (uint32)&etext - 1);
-	kprintf("%10d bytes of data.\n",
-		(uint32)&ebss - (uint32)&data);
-	kprintf("           [0x%08X to 0x%08X]\n\n",
-		(uint32)&data, (uint32)&ebss - 1);
+  /* Output Xinu memory layout */
+  free_mem = 0;
+  for (memptr = memlist.mnext; memptr != NULL; memptr = memptr->mnext) {
+	free_mem += memptr->mlength;
+  }
 
-	/* Enable interrupts */
+  kprintf("%10d bytes of free memory.  Free list:\n", free_mem);
 
-	enable();
+  for (memptr = memlist.mnext; memptr != NULL; memptr = memptr->mnext) {
+	kprintf("           [0x%08X to 0x%08X]\n", (uint32)memptr,
+			((uint32)memptr) + memptr->mlength - 1);
+  }
 
-	/* Initialize the network stack and start processes */
+  kprintf("%10d bytes of Xinu code.\n", (uint32)&etext - (uint32)&text);
+  kprintf("           [0x%08X to 0x%08X]\n", (uint32)&text, (uint32)&etext - 1);
+  kprintf("%10d bytes of data.\n", (uint32)&ebss - (uint32)&data);
+  kprintf("           [0x%08X to 0x%08X]\n\n", (uint32)&data,
+		  (uint32)&ebss - 1);
 
-	net_init();
+  /* Enable interrupts */
 
-	/* Create a process to finish startup and start main */
+  enable();
 
-	resume(create((void *)startup, INITSTK, INITPRIO,
-					"Startup process", 0, NULL));
+  /* Initialize the network stack and start processes */
 
-	/* Become the Null process (i.e., guarantee that the CPU has	*/
-	/*  something to run when no other process is ready to execute)	*/
+  net_init();
 
-	while (TRUE) {
-		;		/* Do nothing */
-	}
+  /* Create a process to finish startup and start main */
 
+  resume(
+	  create((void *)startup, INITSTK, INITPRIO, "Startup process", 0, NULL));
+
+  /* Become the Null process (i.e., guarantee that the CPU has	*/
+  /*  something to run when no other process is ready to execute)	*/
+
+  while (TRUE) {
+	; /* Do nothing */
+  }
 }
-
 
 /*------------------------------------------------------------------------
  *
@@ -104,38 +99,32 @@ void	nulluser()
  *
  *------------------------------------------------------------------------
  */
-local process	startup(void)
-{
-	uint32	ipaddr;			/* Computer's IP address	*/
-	char	str[128];		/* String used to format output	*/
+local process startup(void) {
+  uint32 ipaddr; /* Computer's IP address	*/
+  char str[128]; /* String used to format output	*/
 
+  /* Use DHCP to obtain an IP address and format it */
 
-	/* Use DHCP to obtain an IP address and format it */
+  ipaddr = getlocalip();
+  if ((int32)ipaddr == SYSERR) {
+	kprintf("Cannot obtain an IP address\n");
+  } else {
+	/* Print the IP in dotted decimal and hex */
+	ipaddr = NetData.ipucast;
+	sprintf(str, "%d.%d.%d.%d", (ipaddr >> 24) & 0xff, (ipaddr >> 16) & 0xff,
+			(ipaddr >> 8) & 0xff, ipaddr & 0xff);
 
-	ipaddr = getlocalip();
-	if ((int32)ipaddr == SYSERR) {
-		kprintf("Cannot obtain an IP address\n");
-	} else {
-		/* Print the IP in dotted decimal and hex */
-		ipaddr = NetData.ipucast;
-		sprintf(str, "%d.%d.%d.%d",
-			(ipaddr>>24)&0xff, (ipaddr>>16)&0xff,
-			(ipaddr>>8)&0xff,        ipaddr&0xff);
-	
-		kprintf("Obtained IP address  %s   (0x%08x)\n", str,
-								ipaddr);
-	}
+	kprintf("Obtained IP address  %s   (0x%08x)\n", str, ipaddr);
+  }
 
-	/* Create a process to execute function main() */
+  /* Create a process to execute function main() */
 
-	resume(create((void *)main, INITSTK, INITPRIO,
-					"Main process", 0, NULL));
+  resume(create((void *)main, INITSTK, INITPRIO, "Main process", 0, NULL));
 
-	/* Startup process exits at this point */
+  /* Startup process exits at this point */
 
-	return OK;
+  return OK;
 }
-
 
 /*------------------------------------------------------------------------
  *
@@ -143,98 +132,105 @@ local process	startup(void)
  *
  *------------------------------------------------------------------------
  */
-static	void	sysinit()
-{
-	int32	i;
-	struct	procent	*prptr;		/* Ptr to process table entry	*/
-	struct	sentry	*semptr;	/* Ptr to semaphore table entry	*/
+static void sysinit() {
+  int32 i;
+  struct procent *prptr; /* Ptr to process table entry	*/
+  struct sentry *semptr; /* Ptr to semaphore table entry	*/
 
-	/* Reset the console */
+  /* Reset the console */
 
-	kprintf(CONSOLE_RESET);
-	kprintf("\n%s\n\n", VERSION);
+  kprintf(CONSOLE_RESET);
+  kprintf("\n%s\n\n", VERSION);
 
-	/* Initialize the interrupt vectors */
+  /* Initialize the interrupt vectors */
 
-	initevec();
-	
-	/* Initialize free memory list */
-	
-	meminit();
+  initevec();
 
-	/* Initialize system variables */
+  /* Initialize free memory list */
 
-	/* Count the Null process as the first process in the system */
+  meminit();
 
-	prcount = 1;
+  /* Initialize system variables */
 
-	/* Scheduling is not currently blocked */
+  /* Count the Null process as the first process in the system */
 
-	Defer.ndefers = 0;
+  prcount = 1;
 
-	/* Initialize process table entries free */
+  /* Scheduling is not currently blocked */
 
-	for (i = 0; i < NPROC; i++) {
-		prptr = &proctab[i];
-		prptr->prstate = PR_FREE;
-		prptr->prname[0] = NULLCH;
-		prptr->prstkbase = NULL;
-		prptr->prprio = 0;
-	}
+  Defer.ndefers = 0;
 
-	/* Initialize the Null process entry */	
+  /* Initialize process table entries free */
 
-	prptr = &proctab[NULLPROC];
-	prptr->prstate = PR_CURR;
+  for (i = 0; i < NPROC; i++) {
+	prptr = &proctab[i];
+	prptr->prstate = PR_FREE;
+	prptr->prname[0] = NULLCH;
+	prptr->prstkbase = NULL;
 	prptr->prprio = 0;
-	strncpy(prptr->prname, "prnull", 7);
-	prptr->prstkbase = getstk(NULLSTK);
-	prptr->prstklen = NULLSTK;
-	prptr->prstkptr = 0;
-	currpid = NULLPROC;
-	
-	/* Initialize semaphores */
+  }
 
-	for (i = 0; i < NSEM; i++) {
-		semptr = &semtab[i];
-		semptr->sstate = S_FREE;
-		semptr->scount = 0;
-		semptr->squeue = newqueue();
-	}
+  /* Initialize the Null process entry */
 
-	/* Initialize buffer pools */
+  prptr = &proctab[NULLPROC];
+  prptr->prstate = PR_CURR;
+  prptr->prprio = 0;
+  strncpy(prptr->prname, "prnull", 7);
+  prptr->prstkbase = getstk(NULLSTK);
+  prptr->prstklen = NULLSTK;
+  prptr->pdbr =(unsigned long)(XINU_PAGES * PAGE_SIZE);
+  prptr->prstkptr = 0;
+  currpid = NULLPROC;
 
-	bufinit();
+  /* Initialize semaphores */
 
-	/* Create a ready list for processes */
+  for (i = 0; i < NSEM; i++) {
+	semptr = &semtab[i];
+	semptr->sstate = S_FREE;
+	semptr->scount = 0;
+	semptr->squeue = newqueue();
+  }
 
-	readylist = newqueue();
+  /* Initialize buffer pools */
 
+  bufinit();
 
-	/* initialize the PCI bus */
+  /* Create a ready list for processes */
 
-	pci_init();
+  readylist = newqueue();
 
-	/* Initialize the real time clock */
+  /* initialize the PCI bus */
 
-	clkinit();
+  pci_init();
 
-	for (i = 0; i < NDEVS; i++) {
-		init(i);
-	}
-	return;
+  /* Initialize the real time clock */
+
+  clkinit();
+
+  /* initialize page table and enable paging */
+
+  initialize_system_pd();
+
+  prptr->pdbr = PAGE_SIZE * XINU_PAGES;
+
+  write_cr3(PAGE_SIZE * XINU_PAGES);
+
+  enable_paging();
+
+  for (i = 0; i < NDEVS; i++) {
+	init(i);
+  }
+  return;
 }
 
-int32	stop(char *s)
-{
-	kprintf("%s\n", s);
-	kprintf("looping... press reset\n");
-	while(1)
-		/* Empty */;
+int32 stop(char *s) {
+  kprintf("%s\n", s);
+  kprintf("looping... press reset\n");
+  while (1)
+    /* Empty */;
 }
 
-int32	delay(int n)
-{
-	DELAY(n);
-	return OK;
+int32 delay(int n) {
+  DELAY(n);
+  return OK;
 }

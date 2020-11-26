@@ -1,0 +1,81 @@
+#+TITLE: My Notes
+* Setup
+** For system processes
+- Physical pages need to be mapped to virtual address spaces
+  - xinu_pages, pt_area, ffs_frames
+- Physical pages are init'd in meminit.c, I don't need to do anything for this
+* General
+- Page Directory -> Stores page tables
+- Page Table -> Stores page table entries
+- Page Table Entry-> mapping of virtual address to physical address
+- Question:
+  - Hardware is initialized with pt_area, pt_area sores page directory and page tables
+  - How many page directories are there?
+  - I think that system processes share a single page directory, and all user processes have their own page directories?
+- Ok you little bitch lets get this shit going. We are working in circles here. Hardware has physical memory frames. A physical memory frame is straight up, you go to this index in physical memory and you get this information. So lets say we do want every process to be aware of physical memory addresses, what do we do? Well, we obscure that shit. We obscure it by giving processes chunks of virtual memory.
+- System Processes:
+  Aight so look here, how are we gonna give the physical address space associated with heap, bss, data, txt to system processes? I am not quite sure. bss heap data text all have physical frame addresses. Lets look at them one at a time
+  - BSS: ok so you have the physical address of BSS, what do you do with it? You move around, you access it. Same thing with virtual memory, I need virtual memory to have a virtual address for bss, I am gonna create a page table entry for bss. Where am I going to put the page table entry? Well, its gonna reside in a page table. Where that page table at? It's in physical memory. How do I reference that particular page table? I'll look it up in the page directory, which also resides in the page table area of physical memory.
+
+    - So what do I need here?
+      I need a page directory, which will point to a page table, which will contain page entries
+
+** Hardware Memory Layout
+| PT Area    | <- max_pt_size  |
+| FFS Frames | <- max_ffs_size |
+| Stack      | <- xinu_pages   |
+| Free       |                 |
+| Heap       |                 |
+| BSS        |                 |
+| Data       |                 |
+| Text       | <- 0x00         |
+* Memory
+- holestart = char* (640 * 1060) -> declared in memory.h
+- maxheap = char* npages * page_size - 1 -> declared in i386.c (npages = xinu_pages)
+- xinu_pages = 8192 -> declared in paging.h
+  #+begin_src c
+#define XINU_PAGES      8192    /* number of pages used by default by Xinu               */
+#define PAGE_SIZE       4096    /* number of bytes per page                              */
+#define MAX_FFS_SIZE    16*1024 /* size of FFS space  (in frames)                        */
+#define MAX_PT_SIZE     1024    /* size of space used for page tables (in frames)        */
+  #+end_src
+** Memory Locations
+- Xinu code start: 0
+- Xinu code end: 0x01FFF000
+- Page table area start: 0x02000000
+- System PD -> 0x02000000 to 0x02001000
+- System PT's -> 0x02001000 to 0x0201A000
+** Address Translation
+- 32 bit virtual address - what the fuck does that mean??
+- That means we have 32 bits with which to address all physical memory
+- If we have 32 bits to address all physical memory, how much memory can we map
+- Back up lil friend:
+  - page size: if your pages are 2KB it would take 2*
+** Page Table Entry
+- Address translation information -> PFN
+- Valid bit -> support sparse address space by marking unused space
+- Present bit -> page in memory
+- Protection bits -> read-only, read-write
+- Dirty bit -> page modified since it was brought to memory
+** Videos
+- Virtual Memory Videos Start october 15th, ends november 5th
+-
+
+* Mapping
+- The System page directory starts at physical address 0x020000000
+  + Each entry in the page directory consists of 32 bits
+  + The page is 4KB
+  + The entire page can hold 1024 4 byte (32bit) entries
+- The first system page starts at address 0x02000000 + 0x0001000 -> 0x02001000
+- The system pages occupy physical memory from 0x02001000 to 0x0201A00
+- The first user process page directory starts at 0x0201A00
+** Hi I'm a user process
+- You just created me
+- My pdbr points to a location in physical memory
+- The 0th through 7th entries in my page directory point page tables in physical memory
+- The entries in those tables are directly mapped to physical memory
+- I just allocated some virtual memory
+- I am going to updated my page directory, which already exists in physical memory
+- I am going to see if there is enough space in the page table area for the requisite number of page tables
+- Assuming that there is, I am going to locate the first open entry in my page directory, and update it's base address to point to the start of the new page table
+- I am the first one to allocate virtual memory, so the new entry is going to point to location 0x0201B000
